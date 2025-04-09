@@ -1,4 +1,4 @@
-# DMAC Strategy Research & Alpaca Trading Project
+# DeepVibe - AI Hedge Fund Framework & Trading Algorithm w/Alpaca Markets
 
 This project provides a framework for analyzing market conditions, grading stocks, backtesting strategies, and executing automated trades via the Alpaca API.
 
