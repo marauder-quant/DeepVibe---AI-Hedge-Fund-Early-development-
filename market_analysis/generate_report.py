@@ -253,9 +253,7 @@ def generate_economic_summary(report_path):
             'A': 1, 
             'B': 2,
             'C': 3, 
-            'D': 4,
-            'B/C (prefer B)': 2.5, 
-            'B/C (prefer C)': 2.7
+            'D': 4
         }
         
         # Make sure we handle all quadrant values properly
@@ -469,9 +467,7 @@ def generate_full_report():
                 'A': 'Inflation fighting quadrant - focus on value stocks',
                 'B': 'Growth with inflation quadrant - balanced approach with growth bias',
                 'C': 'Transition to growth quadrant - balanced approach with value bias',
-                'D': 'Growth quadrant - focus on growth stocks',
-                'B/C (prefer B)': 'Transition quadrant (prefer growth stocks)',
-                'B/C (prefer C)': 'Transition quadrant (prefer value stocks)'
+                'D': 'Growth quadrant - focus on growth stocks'
             }
             
             description = quadrant_descriptions.get(current_quadrant['quadrant'], 'Unknown quadrant')

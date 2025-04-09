@@ -137,30 +137,54 @@ def get_stock_data(ticker):
 
 def grade_stocks(stock_data, economic_quadrant):
     """
-    Grade a stock based on economic quadrant and financial metrics.
-    (Identical to S&P 500 version)
+    Grade a stock based on economic quadrant and financial metrics
     
     Parameters:
     - stock_data: dict with stock data
-    - economic_quadrant: current economic quadrant (A, B/C, or D)
+    - economic_quadrant: current economic quadrant (A, B, C, or D)
     
     Returns:
     - dict with graded stock data including overall grade
     """
     graded_stock = stock_data.copy()
-    revenue_grade, earnings_grade, pe_grade, debt_grade = None, None, None, None
     
-    if graded_stock['revenue_growth'] is not None:
-        if graded_stock['revenue_growth'] > 0.5: revenue_grade = 'D'
-        elif graded_stock['revenue_growth'] > 0.2: revenue_grade = 'C'
-        elif graded_stock['revenue_growth'] > 0.1: revenue_grade = 'B'
-        elif graded_stock['revenue_growth'] > 0.05: revenue_grade = 'A'
-        else: revenue_grade = 'F'
+    # Initialize grades
+    revenue_grade = None
+    earnings_grade = None
+    pe_grade = None
+    debt_grade = None
     
-    if graded_stock['earnings_growth'] is not None:
-        if graded_stock['earnings_growth'] > 0.1: earnings_grade = 'B/C'
-        elif graded_stock['earnings_growth'] > 0.05: earnings_grade = 'A'
-        else: earnings_grade = 'F'
+    # Grade Revenue Growth
+    try:
+        if graded_stock['revenue_growth'] is not None:
+            if graded_stock['revenue_growth'] > 0.5:
+                revenue_grade = 'A'
+            elif graded_stock['revenue_growth'] > 0.2:
+                revenue_grade = 'B'
+            elif graded_stock['revenue_growth'] > 0.1:
+                revenue_grade = 'C'
+            elif graded_stock['revenue_growth'] > 0.05:
+                revenue_grade = 'D'
+            else:
+                revenue_grade = 'F'
+    except (KeyError, TypeError) as e:
+        pass
+    
+    # Grade Earnings Growth
+    try:
+        if graded_stock['earnings_growth'] is not None:
+            if graded_stock['earnings_growth'] > 0.2:
+                earnings_grade = 'A'
+            elif graded_stock['earnings_growth'] > 0.1:
+                earnings_grade = 'B'
+            elif graded_stock['earnings_growth'] > 0.05:
+                earnings_grade = 'C'
+            elif graded_stock['earnings_growth'] > 0:
+                earnings_grade = 'D'
+            else:
+                earnings_grade = 'F'
+    except (KeyError, TypeError) as e:
+        pass
     
     if graded_stock['pe_ratio'] is not None and graded_stock['pe_ratio'] > 0:
         if graded_stock['pe_ratio'] <= 10: pe_grade = 'A'
@@ -189,13 +213,13 @@ def grade_stocks(stock_data, economic_quadrant):
             elif a_count >= 2: overall_grade = 'A'
             elif a_count >= 1: overall_grade = 'B'
             else: overall_grade = 'C'
-        elif economic_quadrant == 'B/C (prefer B)':
+        elif economic_quadrant == 'B':
             b_count = grades.count('B')
             if b_count >= 3: overall_grade = 'A+'
             elif b_count >= 2: overall_grade = 'A'
             elif b_count >= 1: overall_grade = 'B'
             else: overall_grade = 'C'
-        elif economic_quadrant == 'B/C (prefer C)':
+        elif economic_quadrant == 'C':
             c_count = grades.count('C')
             if c_count >= 3: overall_grade = 'A+'
             elif c_count >= 2: overall_grade = 'A'
@@ -256,7 +280,7 @@ def analyze_russell2k():
     start_time = time.time()
     print("Starting full Russell 2000 analysis...")
 
-    quadrant, balance_sheet_trend, interest_rate_level = determine_economic_quadrant()
+    quadrant, balance_sheet_trend, interest_rate_level, details = determine_economic_quadrant()
     print(f"Current Economic Quadrant: {quadrant}")
     print(f"Balance Sheet Trend: {balance_sheet_trend}")
     print(f"Interest Rate Level: {interest_rate_level}")

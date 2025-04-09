@@ -23,8 +23,6 @@ These factors define the following quadrants, each suggesting different optimal 
 |-----------------|---------------|----------------|-----------------------|--------------------|
 | `A`             | Decreasing    | High           | Inflation Fighting    | Value & Quality    |
 | `B`             | Either        | Either         | Growth with Inflation | Balanced (Growth Bias) |
-| `B/C (prefer B)`| Increasing    | High           | Transition (Growth Bias) | Balanced -> Growth |
-| `B/C (prefer C)`| Decreasing    | Low            | Transition (Value Bias) | Balanced -> Value  |
 | `C`             | Either        | Either         | Transition to Growth  | Balanced (Value Bias) |
 | `D`             | Increasing    | Low            | Growth Promoting      | Growth             |
 

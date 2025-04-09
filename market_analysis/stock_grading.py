@@ -113,47 +113,51 @@ def get_stock_data(tickers, period="2y"):
 
 def grade_stocks(stock_data, economic_quadrant):
     """
-    Grade stocks based on economic quadrant
+    Grade stocks based on financial metrics and the current economic quadrant
     
     Parameters:
     - stock_data: DataFrame with stock data
-    - economic_quadrant: current economic quadrant (A, B/C, or D)
+    - economic_quadrant: current economic quadrant (A, B, C, or D)
     
     Returns:
-    - DataFrame with graded stocks
+    - graded_stocks: DataFrame with graded stock data
     """
-    # Create a copy of the data
+    # Create a copy of the stock data DataFrame
     graded_stocks = stock_data.copy()
     
-    # Add grade columns
+    # Initialize columns for grades
     graded_stocks['revenue_grade'] = None
     graded_stocks['earnings_grade'] = None
     graded_stocks['pe_grade'] = None
     graded_stocks['debt_grade'] = None
     graded_stocks['overall_grade'] = None
     
-    # Grade based on criteria from the video
+    # Grade each stock
     for idx, stock in graded_stocks.iterrows():
-        # Revenue Growth grading
-        if stock['revenue_growth'] is not None:
-            if stock['revenue_growth'] > 0.5:  # >50%
-                graded_stocks.loc[idx, 'revenue_grade'] = 'D'
-            elif stock['revenue_growth'] > 0.2:  # >20%
-                graded_stocks.loc[idx, 'revenue_grade'] = 'C'
+        # Revenue Growth Grade
+        if pd.notnull(stock['revenue_growth']):
+            if stock['revenue_growth'] > 0.2:  # >20%
+                graded_stocks.loc[idx, 'revenue_grade'] = 'A'
             elif stock['revenue_growth'] > 0.1:  # >10%
                 graded_stocks.loc[idx, 'revenue_grade'] = 'B'
             elif stock['revenue_growth'] > 0.05:  # >5%
-                graded_stocks.loc[idx, 'revenue_grade'] = 'A'
-            else:
+                graded_stocks.loc[idx, 'revenue_grade'] = 'C'
+            elif stock['revenue_growth'] > 0:  # >0%
+                graded_stocks.loc[idx, 'revenue_grade'] = 'D'
+            else:  # negative
                 graded_stocks.loc[idx, 'revenue_grade'] = 'F'
         
-        # Earnings Growth grading
-        if stock['earnings_growth'] is not None:
-            if stock['earnings_growth'] > 0.1:  # >10%
-                graded_stocks.loc[idx, 'earnings_grade'] = 'B/C'
-            elif stock['earnings_growth'] > 0.05:  # >5%
+        # Earnings Growth Grade
+        if pd.notnull(stock['earnings_growth']):
+            if stock['earnings_growth'] > 0.2:  # >20%
                 graded_stocks.loc[idx, 'earnings_grade'] = 'A'
-            else:
+            elif stock['earnings_growth'] > 0.1:  # >10%
+                graded_stocks.loc[idx, 'earnings_grade'] = 'B'
+            elif stock['earnings_growth'] > 0.05:  # >5%
+                graded_stocks.loc[idx, 'earnings_grade'] = 'C'
+            elif stock['earnings_growth'] > 0:  # >0%
+                graded_stocks.loc[idx, 'earnings_grade'] = 'D'
+            else:  # negative
                 graded_stocks.loc[idx, 'earnings_grade'] = 'F'
         
         # P/E Ratio grading
@@ -205,8 +209,8 @@ def grade_stocks(stock_data, economic_quadrant):
                 else:
                     graded_stocks.loc[idx, 'overall_grade'] = 'C'
             
-            # For quadrant B/C (prefer B), prioritize stocks with B characteristics
-            elif economic_quadrant == 'B/C (prefer B)':
+            # For quadrant B, prioritize stocks with B characteristics
+            elif economic_quadrant == 'B':
                 # Count B grades
                 b_count = grades.count('B')
                 # Prioritize stocks with more B grades
@@ -219,8 +223,8 @@ def grade_stocks(stock_data, economic_quadrant):
                 else:
                     graded_stocks.loc[idx, 'overall_grade'] = 'C'
             
-            # For quadrant B/C (prefer C), prioritize stocks with C characteristics
-            elif economic_quadrant == 'B/C (prefer C)':
+            # For quadrant C, prioritize stocks with C characteristics
+            elif economic_quadrant == 'C':
                 # Count C grades
                 c_count = grades.count('C')
                 # Prioritize stocks with more C grades

@@ -33,7 +33,6 @@ This file allows you to customize the bot's behavior without modifying the main 
     * `B` (Growth with inflation): Balanced with growth bias (50%)
     * `C` (Transition to growth): Balanced with value bias (70%)
     * `D` (Growth quadrant): Aggressive allocation (100%)
-    * `B/C` variants: Transition quadrants (50%)
     * `Unknown`: Default conservative allocation (20%)
 *   `QUADRANT_STOCK_GRADES`: A dictionary mapping each quadrant label to a list of acceptable stock grades. The order determines priority.
 *   `GRADE_LIMIT_MAP`: Maps the grade strings to the corresponding `TOP_*_STOCKS` variable.

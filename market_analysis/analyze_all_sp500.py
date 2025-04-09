@@ -108,63 +108,70 @@ def get_stock_data(ticker):
 
 def grade_stocks(stock_data, economic_quadrant):
     """
-    Grade a stock based on economic quadrant and financial metrics
+    Grade stock based on financial metrics
     
     Parameters:
-    - stock_data: dict with stock data
-    - economic_quadrant: current economic quadrant (A, B/C, or D)
+    - stock_data: Dictionary with stock data
+    - economic_quadrant: current economic quadrant (A, B, C, or D)
     
     Returns:
-    - dict with graded stock data including overall grade
+    - graded_stock: Dictionary with graded stock data
     """
+    # Create a copy of the stock data dictionary to avoid modifying the original
     graded_stock = stock_data.copy()
     
-    # Initialize grades
-    revenue_grade = None
-    earnings_grade = None
-    pe_grade = None
-    debt_grade = None
+    # Default to grade C
+    revenue_grade = 'C'
+    earnings_grade = 'C'
+    pe_grade = 'C'
+    debt_grade = 'C'
     
-    # Grade Revenue Growth
-    if graded_stock['revenue_growth'] is not None:
-        if graded_stock['revenue_growth'] > 0.5:  # >50%
-            revenue_grade = 'D'
-        elif graded_stock['revenue_growth'] > 0.2:  # >20%
-            revenue_grade = 'C'
-        elif graded_stock['revenue_growth'] > 0.1:  # >10%
-            revenue_grade = 'B'
-        elif graded_stock['revenue_growth'] > 0.05:  # >5%
+    # Revenue Growth Grade (A, B, C, D, F)
+    revenue_growth = stock_data.get('revenue_growth')
+    if revenue_growth is not None:
+        if revenue_growth > 0.2:  # >20%
             revenue_grade = 'A'
-        else:
+        elif revenue_growth > 0.1:  # >10%
+            revenue_grade = 'B'
+        elif revenue_growth > 0.05:  # >5%
+            revenue_grade = 'C'
+        elif revenue_growth > 0:  # >0%
+            revenue_grade = 'D'
+        else:  # negative
             revenue_grade = 'F'
     
-    # Grade Earnings Growth
-    if graded_stock['earnings_growth'] is not None:
-        if graded_stock['earnings_growth'] > 0.1:  # >10%
-            earnings_grade = 'B/C'
-        elif graded_stock['earnings_growth'] > 0.05:  # >5%
+    # Earnings Growth Grade (A, B, C, D, F)
+    earnings_growth = stock_data.get('earnings_growth')
+    if earnings_growth is not None:
+        if earnings_growth > 0.2:  # >20%
             earnings_grade = 'A'
-        else:
+        elif earnings_growth > 0.1:  # >10%
+            earnings_grade = 'B'
+        elif earnings_growth > 0.05:  # >5%
+            earnings_grade = 'C'
+        elif earnings_growth > 0:  # >0%
+            earnings_grade = 'D'
+        else:  # negative
             earnings_grade = 'F'
     
     # Grade P/E Ratio
-    if graded_stock['pe_ratio'] is not None and graded_stock['pe_ratio'] > 0:
-        if graded_stock['pe_ratio'] <= 10:
+    if stock_data['pe_ratio'] is not None and stock_data['pe_ratio'] > 0:
+        if stock_data['pe_ratio'] <= 10:
             pe_grade = 'A'
-        elif graded_stock['pe_ratio'] <= 20:
+        elif stock_data['pe_ratio'] <= 20:
             pe_grade = 'B'
-        elif graded_stock['pe_ratio'] <= 25:
+        elif stock_data['pe_ratio'] <= 25:
             pe_grade = 'C'
         else:
             pe_grade = 'F'
     
     # Grade Debt to EBITDA
-    if graded_stock['debt_to_ebitda'] is not None:
-        if graded_stock['debt_to_ebitda'] <= 1.0:
+    if stock_data['debt_to_ebitda'] is not None:
+        if stock_data['debt_to_ebitda'] <= 1.0:
             debt_grade = 'A'
-        elif graded_stock['debt_to_ebitda'] <= 2.0:
+        elif stock_data['debt_to_ebitda'] <= 2.0:
             debt_grade = 'B'
-        elif graded_stock['debt_to_ebitda'] <= 5.0:
+        elif stock_data['debt_to_ebitda'] <= 5.0:
             debt_grade = 'C'
         else:
             debt_grade = 'D'
@@ -203,8 +210,8 @@ def grade_stocks(stock_data, economic_quadrant):
             else:
                 overall_grade = 'C'
         
-        # For quadrant B/C (prefer B), prioritize stocks with B characteristics
-        elif economic_quadrant == 'B/C (prefer B)':
+        # For quadrant B, prioritize stocks with B characteristics
+        elif economic_quadrant == 'B':
             # Count B grades
             b_count = grades.count('B')
             # Prioritize stocks with more B grades
@@ -217,8 +224,8 @@ def grade_stocks(stock_data, economic_quadrant):
             else:
                 overall_grade = 'C'
         
-        # For quadrant B/C (prefer C), prioritize stocks with C characteristics
-        elif economic_quadrant == 'B/C (prefer C)':
+        # For quadrant C, prioritize stocks with C characteristics
+        elif economic_quadrant == 'C':
             # Count C grades
             c_count = grades.count('C')
             # Prioritize stocks with more C grades
@@ -299,7 +306,7 @@ def analyze_sp500():
     print("Starting full S&P 500 analysis...")
     
     # Determine current economic quadrant
-    quadrant, balance_sheet_trend, interest_rate_level = determine_economic_quadrant()
+    quadrant, balance_sheet_trend, interest_rate_level, details = determine_economic_quadrant()
     print(f"Current Economic Quadrant: {quadrant}")
     print(f"Balance Sheet Trend: {balance_sheet_trend}")
     print(f"Interest Rate Level: {interest_rate_level}")
