@@ -1,3 +1,6 @@
+
+![original](https://github.com/user-attachments/assets/89e2332b-809e-4eb8-b54e-d96b858264bd)
+
 # DeepVibe - AI Hedge Fund Framework & Trading Algorithm w/Alpaca Markets
 
 This project provides a framework for analyzing market conditions, grading stocks, backtesting strategies, and executing automated trades via the Alpaca API.
