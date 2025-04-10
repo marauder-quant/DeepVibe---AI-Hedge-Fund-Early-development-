@@ -24,6 +24,8 @@ import numba as nb  # For performance optimization
 import time  # For timing operations
 import multiprocessing as mp
 import ray  # For distributed computing
+import psutil  # For memory information
+import sqlite3  # For database storage
 
 # Import configuration - use direct import instead of relative import
 import sys
@@ -38,8 +40,12 @@ load_dotenv()
 #############################################
 # All configuration parameters are now imported from config.py
 
-# Initialize Ray for distributed computing
-ray.init(ignore_reinit_error=True)
+# Database settings
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'qmac_parameters.db')
+TOP_N_PARAMS = 10  # Number of top parameter combinations to store
+
+# Initialize Ray for distributed computing with proper memory limits
+ray.init(num_cpus=os.cpu_count(), _memory=int(0.8 * psutil.virtual_memory().total), ignore_reinit_error=True)
 
 @nb.njit
 def calculate_cross_signals(fast_ma, slow_ma):
@@ -315,7 +321,7 @@ def run_qmac_strategy(symbol, start_date, end_date,
         'hold_pf': hold_pf
     }
 
-@nb.njit(fastmath=True, cache=True)
+@nb.njit(parallel=True, fastmath=True, cache=True)
 def evaluate_window_combination(prices, buy_fast, buy_slow, sell_fast, sell_slow, window_size):
     """
     Evaluate a single window combination using numba for performance.
@@ -401,6 +407,11 @@ def evaluate_window_combination(prices, buy_fast, buy_slow, sell_fast, sell_slow
             # Calculate return (accounting for fees/slippage)
             trade_return = (exit_price / entry_price) * (1.0 - 0.005) - 1.0  # 0.5% for fees+slippage
             total_return += trade_return
+            
+        # Early stopping for clearly unpromising combinations
+        if position == 1 and total_return < -0.10:  # -10% threshold
+            # If already seeing significant losses, don't waste time on this combination
+            return total_return
     
     # If still in position at the end, close position
     if position == 1:
@@ -658,7 +669,7 @@ def sample_unique_windows(min_window, max_window, window_step, count=100, total_
     return valid_combinations
 
 # Ray remote function for distributed combination evaluation
-@ray.remote
+@ray.remote(num_cpus=1)  # Explicitly specify resources
 def evaluate_window_combinations_batch(combinations, prices, max_window_size):
     """
     Evaluate a batch of window combinations using Ray for distributed computing.
@@ -671,17 +682,246 @@ def evaluate_window_combinations_batch(combinations, prices, max_window_size):
     Returns:
         list: List of (combination, performance) tuples
     """
+    # Ensure price array is contiguous
+    prices = np.ascontiguousarray(prices)
+    
     results = []
     for buy_fast, buy_slow, sell_fast, sell_slow in combinations:
         perf = evaluate_window_combination(prices, buy_fast, buy_slow, sell_fast, sell_slow, max_window_size)
         results.append(((buy_fast, buy_slow, sell_fast, sell_slow), perf))
     return results
 
+def initialize_database():
+    """
+    Initialize the SQLite database for storing best parameters.
+    
+    Returns:
+        None
+    """
+    # Create database directory if it doesn't exist
+    db_dir = os.path.dirname(DB_PATH)
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir)
+        
+    # Connect to database
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    # Create table for parameter combinations if it doesn't exist
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS best_parameters (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        symbol TEXT NOT NULL,
+        timeframe TEXT NOT NULL,
+        rank INTEGER NOT NULL,
+        buy_fast INTEGER NOT NULL,
+        buy_slow INTEGER NOT NULL,
+        sell_fast INTEGER NOT NULL,
+        sell_slow INTEGER NOT NULL,
+        performance REAL NOT NULL,
+        total_return REAL,
+        sharpe_ratio REAL,
+        max_drawdown REAL,
+        num_trades INTEGER,
+        win_rate REAL,
+        date_from TEXT NOT NULL,
+        date_to TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        UNIQUE(symbol, timeframe, rank, date_from, date_to)
+    )
+    ''')
+    
+    # Commit changes and close connection
+    conn.commit()
+    conn.close()
+    
+    print(f"Database initialized at {DB_PATH}")
+
+def save_top_parameters_to_db(symbol, timeframe, start_date, end_date, performance_df, 
+                             optimal_results=None, top_n=TOP_N_PARAMS):
+    """
+    Save the top N parameter combinations to the database.
+    
+    Args:
+        symbol (str): Trading symbol
+        timeframe (str): Data timeframe
+        start_date (datetime): Start date of backtest
+        end_date (datetime): End date of backtest
+        performance_df (DataFrame): DataFrame containing performance data for all combinations
+        optimal_results (dict, optional): Results from optimal parameter run
+        top_n (int): Number of top parameter combinations to save
+        
+    Returns:
+        None
+    """
+    # Initialize the database if it doesn't exist
+    if not os.path.exists(DB_PATH):
+        initialize_database()
+    
+    # Connect to database
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    # Get top N parameter combinations
+    # Sort by 'total_return' by default, but allow other metrics
+    top_params = performance_df.nlargest(top_n, 'total_return')
+    
+    # Format dates for database
+    date_from = start_date.strftime('%Y-%m-%d')
+    date_to = end_date.strftime('%Y-%m-%d')
+    timestamp = datetime.now().isoformat()
+    
+    # Delete existing entries for this symbol, timeframe, date range
+    c.execute('''
+    DELETE FROM best_parameters 
+    WHERE symbol = ? AND timeframe = ? AND date_from = ? AND date_to = ?
+    ''', (symbol, timeframe, date_from, date_to))
+    
+    # Insert top parameter combinations
+    for rank, (_, row) in enumerate(top_params.iterrows(), 1):
+        # Extract parameters
+        buy_fast = int(row['buy_fast'])
+        buy_slow = int(row['buy_slow'])
+        sell_fast = int(row['sell_fast'])
+        sell_slow = int(row['sell_slow'])
+        performance = float(row['total_return'])
+        
+        # Default values for additional metrics
+        total_return = None
+        sharpe_ratio = None
+        max_drawdown = None
+        num_trades = None
+        win_rate = None
+        
+        # If this is the top-ranked combination and we have optimal results, extract detailed metrics
+        if rank == 1 and optimal_results is not None:
+            try:
+                stats = optimal_results['qmac_pf'].stats()
+                total_return = stats['Total Return [%]'] / 100.0  # Convert from percentage
+                sharpe_ratio = stats['Sharpe Ratio']
+                max_drawdown = stats['Max Drawdown [%]'] / 100.0  # Convert from percentage
+                num_trades = len(optimal_results['qmac_pf'].trades)
+                win_rate = stats['Win Rate [%]'] / 100.0 if 'Win Rate [%]' in stats else None
+            except Exception as e:
+                print(f"Warning: Could not extract detailed metrics: {e}")
+        
+        # Insert into database
+        c.execute('''
+        INSERT INTO best_parameters 
+        (symbol, timeframe, rank, buy_fast, buy_slow, sell_fast, sell_slow, 
+         performance, total_return, sharpe_ratio, max_drawdown, num_trades, win_rate,
+         date_from, date_to, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            symbol, timeframe, rank, buy_fast, buy_slow, sell_fast, sell_slow,
+            performance, total_return, sharpe_ratio, max_drawdown, num_trades, win_rate,
+            date_from, date_to, timestamp
+        ))
+    
+    # Commit changes and close connection
+    conn.commit()
+    conn.close()
+    
+    print(f"Saved top {top_n} parameter combinations to database for {symbol} {timeframe}")
+
+def get_parameters_from_db(symbol=None, timeframe=None, top_n=TOP_N_PARAMS):
+    """
+    Query the database for saved parameter combinations.
+    
+    Args:
+        symbol (str, optional): Filter by symbol
+        timeframe (str, optional): Filter by timeframe
+        top_n (int): Maximum number of combinations to return per group
+        
+    Returns:
+        pd.DataFrame: DataFrame containing parameter combinations
+    """
+    # Check if database exists
+    if not os.path.exists(DB_PATH):
+        print(f"Database not found at {DB_PATH}")
+        return pd.DataFrame()
+    
+    # Connect to database
+    conn = sqlite3.connect(DB_PATH)
+    
+    # Build query based on filters
+    query = "SELECT * FROM best_parameters"
+    params = []
+    
+    if symbol or timeframe:
+        query += " WHERE"
+        
+        if symbol:
+            query += " symbol = ?"
+            params.append(symbol)
+            
+        if timeframe:
+            if symbol:
+                query += " AND"
+            query += " timeframe = ?"
+            params.append(timeframe)
+    
+    query += " ORDER BY symbol, timeframe, date_from DESC, date_to DESC, rank"
+    
+    # Execute query and load results into DataFrame
+    df = pd.read_sql_query(query, conn, params=params)
+    
+    # Close connection
+    conn.close()
+    
+    # Pivot the data to show different timeframes as columns with specific parameter values
+    if timeframe is None and symbol is not None:
+        # Get only the latest parameters for each timeframe
+        latest_params = df.sort_values(['timeframe', 'date_from', 'date_to', 'rank'], 
+                                      ascending=[True, False, False, True])
+        
+        # Get unique timeframes
+        timeframes = latest_params['timeframe'].unique()
+        
+        # Create a structured DataFrame with specific columns for each parameter and timeframe
+        result_data = []
+        
+        for i in range(top_n):
+            row_data = {'rank': i+1}
+            
+            # Add data for each timeframe
+            for tf in timeframes:
+                tf_data = latest_params[latest_params['timeframe'] == tf]
+                
+                # Check if we have data for this rank
+                if i < len(tf_data):
+                    param_row = tf_data.iloc[i]
+                    row_data[f'{tf}_buy_fast'] = param_row['buy_fast']
+                    row_data[f'{tf}_buy_slow'] = param_row['buy_slow']
+                    row_data[f'{tf}_sell_fast'] = param_row['sell_fast']
+                    row_data[f'{tf}_sell_slow'] = param_row['sell_slow']
+                    row_data[f'{tf}_return'] = param_row['performance']
+                    
+                    # Add additional metrics if available
+                    if param_row['total_return'] is not None:
+                        row_data[f'{tf}_total_return'] = param_row['total_return']
+                    if param_row['sharpe_ratio'] is not None:
+                        row_data[f'{tf}_sharpe'] = param_row['sharpe_ratio']
+                    if param_row['max_drawdown'] is not None:
+                        row_data[f'{tf}_drawdown'] = param_row['max_drawdown']
+                    if param_row['win_rate'] is not None:
+                        row_data[f'{tf}_win_rate'] = param_row['win_rate']
+                
+            # Only add rows that have some data
+            if len(row_data) > 1:  # More than just the rank
+                result_data.append(row_data)
+        
+        # Create DataFrame
+        return pd.DataFrame(result_data)
+    
+    return df
+
 def analyze_window_combinations_ray(symbol, start_date, end_date, 
                                    min_window=DEFAULT_MIN_WINDOW, max_window=DEFAULT_MAX_WINDOW, 
                                    window_step=DEFAULT_WINDOW_STEP, metric='total_return', 
                                    timeframe=DEFAULT_TIMEFRAME, verbose=True,
-                                   max_combinations=MAX_COMBINATIONS, num_cpus=None):
+                                   max_combinations=MAX_COMBINATIONS, num_cpus=None,
+                                   save_to_db=True, top_n=TOP_N_PARAMS):
     """
     Analyze window combinations using Ray for distributed computing.
     
@@ -697,10 +937,13 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
         verbose (bool): Whether to print detailed output
         max_combinations (int): Maximum combinations to test
         num_cpus (int): Number of CPUs to use (None for auto)
+        save_to_db (bool): Whether to save results to database
+        top_n (int): Number of top parameter combinations to save
         
     Returns:
         dict: Analysis results
     """
+    # Existing code remains unchanged...
     start_time = time.time()
     
     # Get CPU count for Ray
@@ -720,8 +963,8 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
         verbose=verbose
     )
     
-    # Get price data
-    prices = single_result['ohlcv']['Close'].values
+    # Get price data and ensure it's contiguous for optimal Numba performance
+    prices = np.ascontiguousarray(single_result['ohlcv']['Close'].values)
     
     # Sample window combinations
     window_combinations = sample_unique_windows(
@@ -731,8 +974,8 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
     total_combinations = len(window_combinations)
     print(f"Testing {total_combinations:,} combinations with Ray distributed computing")
     
-    # Split combinations into batches
-    batch_size = max(1, total_combinations // (num_cpus * 10))  # 10 batches per CPU
+    # Split combinations into batches - use larger batch size for better performance
+    batch_size = max(50, total_combinations // (num_cpus * 2))  # Fewer, larger batches
     batches = [window_combinations[i:i+batch_size] for i in range(0, total_combinations, batch_size)]
     num_batches = len(batches)
     
@@ -793,6 +1036,16 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
         for (c, p) in all_results
     ])
     
+    # Save top parameters to database if requested
+    if save_to_db:
+        try:
+            save_top_parameters_to_db(
+                symbol, timeframe, start_date, end_date, 
+                results_df, optimal_results, top_n
+            )
+        except Exception as e:
+            print(f"Error saving to database: {e}")
+    
     end_time = time.time()
     print(f"Ray-powered optimization completed in {end_time - start_time:.2f} seconds")
     
@@ -809,7 +1062,7 @@ def analyze_window_combinations(symbol, start_date, end_date,
                               window_step=DEFAULT_WINDOW_STEP, metric='total_return', 
                               timeframe=DEFAULT_TIMEFRAME, single_result=None, verbose=True,
                               max_combinations=MAX_COMBINATIONS, total_possible=None, 
-                              use_ray=True, num_cpus=None):
+                              use_ray=True, num_cpus=None, save_to_db=True, top_n=TOP_N_PARAMS):
     """
     Analyze multiple window combinations for QMAC strategy.
     
@@ -828,6 +1081,8 @@ def analyze_window_combinations(symbol, start_date, end_date,
         total_possible (int, optional): Pre-calculated total possible combinations
         use_ray (bool): Whether to use Ray for distributed computation
         num_cpus (int): Number of CPUs to use (None for auto)
+        save_to_db (bool): Whether to save results to database
+        top_n (int): Number of top parameter combinations to save
         
     Returns:
         dict: Dictionary containing the analysis results
@@ -839,7 +1094,8 @@ def analyze_window_combinations(symbol, start_date, end_date,
             min_window=min_window, max_window=max_window,
             window_step=window_step, metric=metric,
             timeframe=timeframe, verbose=verbose,
-            max_combinations=max_combinations, num_cpus=num_cpus
+            max_combinations=max_combinations, num_cpus=num_cpus,
+            save_to_db=save_to_db, top_n=top_n
         )
     
     # Otherwise use the original implementation
@@ -1015,9 +1271,6 @@ def analyze_window_combinations(symbol, start_date, end_date,
     last_report_time = time.time()
     testing_start_time = time.time()
     
-    # Array to store timing data for individual combinations
-    timing_data = []
-    
     # Enhanced progress bar setup
     from tqdm.auto import tqdm, trange
     
@@ -1094,18 +1347,6 @@ def analyze_window_combinations(symbol, start_date, end_date,
                 if len(combo_times) >= 25:
                     avg_time = sum(combo_times) / len(combo_times)
                     median_time = sorted(combo_times)[len(combo_times)//2]
-                    min_time = min(combo_times)
-                    max_time = max(combo_times)
-                    
-                    # Store timing data
-                    timing_data.append({
-                        'batch': batch_idx,
-                        'combinations_tested': total_tested,
-                        'avg_time': avg_time,
-                        'median_time': median_time,
-                        'min_time': min_time,
-                        'max_time': max_time
-                    })
                     
                     # Update description with timing information
                     main_pbar.set_description(f"Testing: {avg_time*1000:.1f}ms/combo")
@@ -1232,11 +1473,6 @@ def analyze_window_combinations(symbol, start_date, end_date,
                 # Also save results array for potential resume
                 results_file = f"backtests/qmac_strategy/results/qmac_results_{symbol}_{timeframe}.npy"
                 np.save(results_file, results)
-                
-                # Save timing data
-                timing_file = f"backtests/qmac_strategy/timing/qmac_timing_{symbol}_{timeframe}.json"
-                with open(timing_file, 'w') as f:
-                    json.dump(timing_data, f)
             except Exception as e:
                 print(f"Error saving files: {e}")
     
@@ -1314,6 +1550,30 @@ def analyze_window_combinations(symbol, start_date, end_date,
         avg_time_per_combo = total_time / total_tested
         print(f"Average time per combination: {avg_time_per_combo*1000:.2f} ms")
         print(f"Combinations per second: {1.0/avg_time_per_combo:.2f}")
+    
+    # Save top parameters to database if requested
+    if save_to_db:
+        try:
+            optimal_results = None
+            if 'optimal_windows' in locals():
+                # Run optimal strategy to get full results for database
+                buy_fast, buy_slow, sell_fast, sell_slow = optimal_windows
+                optimal_results = run_qmac_strategy(
+                    symbol, start_date, end_date,
+                    buy_fast_window=buy_fast,
+                    buy_slow_window=buy_slow,
+                    sell_fast_window=sell_fast,
+                    sell_slow_window=sell_slow,
+                    timeframe=timeframe,
+                    verbose=False
+                )
+            
+            save_top_parameters_to_db(
+                symbol, timeframe, start_date, end_date, 
+                performance_df, optimal_results, top_n
+            )
+        except Exception as e:
+            print(f"Error saving to database: {e}")
     
     return {
         'ohlcv': ohlcv,
@@ -1619,7 +1879,8 @@ if __name__ == "__main__":
     window_results = analyze_window_combinations(
         symbol, start_date, end_date, min_window=min_window, max_window=max_window, 
         window_step=window_step, timeframe=timeframe, use_ray=use_ray, num_cpus=num_cpus,
-        max_combinations=max_combinations)
+        max_combinations=max_combinations, total_possible=total_combinations,
+        save_to_db=True, top_n=TOP_N_PARAMS)
     
     buy_fast, buy_slow, sell_fast, sell_slow = window_results['optimal_windows']
     optimal_perf = window_results['optimal_performance']

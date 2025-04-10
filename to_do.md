@@ -21,5 +21,8 @@
     to get constant out of sample returns, save results, issue confidence ranking
 #21: clean up files structures, deail with inits.py, get html copies of all png
 #22: fix kill switch (WARNING: remaining positions) wrong output
-#23: work on getting better fills
+#23: work on getting better fills (ALPACA ELITE)
+#24: move fred api key to .env
+#25: guide to setup and run in command line online (for cloud compute tests)
+
     
