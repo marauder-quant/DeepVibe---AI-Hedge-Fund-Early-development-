@@ -13,8 +13,8 @@ import os
 import sys
 from pathlib import Path
 
-# Import from the local module directly since we're in the same directory
-from dmac_strategy import (
+# Import from the local module with the correct path
+from backtests.dmac_strategy.dmac_strategy import (
     run_dmac_strategy, 
     analyze_window_combinations, 
     plot_dmac_strategy, 
@@ -55,7 +55,7 @@ def parse_args():
                         help='Run window optimization')
     parser.add_argument('--save-plots', action='store_true', 
                         help='Save plots to files')
-    parser.add_argument('--output-dir', type=str, default='plots', 
+    parser.add_argument('--output-dir', type=str, default='../plots', 
                         help='Directory to save plots')
     parser.add_argument('--verbose', action='store_true', default=True,
                         help='Print detailed information')
@@ -107,14 +107,21 @@ def main():
     
     # Save plots if requested
     if args.save_plots:
-        ensure_directory(args.output_dir)
+        # Use absolute path for output directory
+        output_dir = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), 
+            '..', 
+            'plots'
+        ))
+        ensure_directory(output_dir)
+        
         symbol_safe = args.symbol.replace('/', '_')
         date_range = f"{args.start}_to_{args.end}"
         window_combo = f"fast{args.fast_window}_slow{args.slow_window}"
         
         for name, fig in figures.items():
             filename = os.path.join(
-                args.output_dir, 
+                output_dir, 
                 f"{symbol_safe}_{name}_{date_range}_{window_combo}.png"
             )
             fig.write_image(filename)
@@ -141,8 +148,16 @@ def main():
         heatmap = plot_heatmap(window_results['dmac_perf_matrix'], args.metric)
         
         if args.save_plots:
+            # Use absolute path for output directory
+            output_dir = os.path.abspath(os.path.join(
+                os.path.dirname(__file__), 
+                '..', 
+                'plots'
+            ))
+            ensure_directory(output_dir)
+            
             filename = os.path.join(
-                args.output_dir, 
+                output_dir, 
                 f"{symbol_safe}_heatmap_{date_range}.png"
             )
             print(f"Saving heatmap to {filename}...")

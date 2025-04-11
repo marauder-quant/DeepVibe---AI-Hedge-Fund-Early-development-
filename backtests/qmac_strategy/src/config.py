@@ -30,8 +30,8 @@ MAX_COMBINATIONS = -1  # Maximum window combinations to test (set to -1 for unli
 
 # Out-of-sample testing settings
 DEFAULT_OOS_STOCKS = 500      # Default number of stocks to test
-MAX_OOS_WINDOWS = 500          # Maximum number of time windows to test per stock
-TOP_N_PARAMS = 10              # Number of top parameter combinations to store in database
+MAX_OOS_WINDOWS = 50          # Maximum number of time windows to test per stock
+TOP_N_PARAMS = 100              # Number of top parameter combinations to store in database
 DEFAULT_OOS_WINDOW_LENGTH = 60  # Default length of each window in days
 DEFAULT_TOP_PARAMS = 100  # Default number of top parameter sets to test
 

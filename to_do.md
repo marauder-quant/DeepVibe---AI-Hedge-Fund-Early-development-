@@ -24,5 +24,8 @@
 #23: work on getting better fills (ALPACA ELITE)
 #24: move fred api key to .env
 #25: guide to setup and run in command line online (for cloud compute tests)
+#26: fix qmac oos results
+#27: Error placing BUY order for 55 shares of ADPT: {"code":42210000,"message":"invalid limit_price 7.802249903678894. sub-penny increment does not fulfill minimum pricing criteria"}
+[2025-04-11 00:11:27] Finished checking ADPT
 
     

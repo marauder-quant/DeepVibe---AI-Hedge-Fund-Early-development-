@@ -10,6 +10,9 @@ venv.bak/
 # Reference documentation
 reference_docs/
 
+# Old code
+outdated/
+
 # Database files
 *.db
 market_analysis/data/*.db

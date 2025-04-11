@@ -13,9 +13,17 @@ from datetime import datetime, timedelta
 from scipy.stats import percentileofscore
 import yfinance as yf
 import sqlite3
+from dotenv import load_dotenv
 
 # --- Configuration ---
-FRED_API_KEY = "69d56106bb7eb53d5117414d9d6e0b9e" # Replace with your key if needed
+# Load environment variables from .env file
+load_dotenv()
+
+# Get FRED API key from environment variables
+FRED_API_KEY = os.getenv("FRED_API_KEY")
+if not FRED_API_KEY:
+    raise ValueError("FRED_API_KEY not found in environment variables. Please add it to your .env file.")
+
 fred = Fred(api_key=FRED_API_KEY)
 
 # Plotting period

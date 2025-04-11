@@ -8,9 +8,16 @@ import matplotlib.pyplot as plt
 from fredapi import Fred
 import yfinance as yf
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
-# Set up FRED API with the provided key
-FRED_API_KEY = "69d56106bb7eb53d5117414d9d6e0b9e"
+# Load environment variables from .env file
+load_dotenv()
+
+# Get FRED API key from environment variables
+FRED_API_KEY = os.getenv("FRED_API_KEY")
+if not FRED_API_KEY:
+    raise ValueError("FRED_API_KEY not found in environment variables. Please add it to your .env file.")
+
 fred = Fred(api_key=FRED_API_KEY)
 
 def test_fred_connection():
