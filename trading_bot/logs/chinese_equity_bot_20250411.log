@@ -1,0 +1,388 @@
+[2025-04-11 00:11:27] {'Volatility': 0.16000000000000003, 'Gold': 0.16000000000000003, 'BONDS': 0.48}
+[2025-04-11 00:11:27] Account status: ACTIVE
+[2025-04-11 00:11:27] Buying power: $299817.30
+[2025-04-11 00:11:27] Current Chinese economic quadrant: C
+[2025-04-11 00:11:27] Equity allocation: 50.0%
+[2025-04-11 00:11:27] Notes: Quadrant C (CMS Pctl 69.4%): Above average macro momentum.
+[2025-04-11 00:11:27] Starting monitoring using 50-period SMA on 4h timeframe
+[2025-04-11 00:11:27] Bot will scan after each 4h bar closes (with 5-minute buffer for data availability)
+[2025-04-11 00:11:27] Note: Trading will only occur when a new 4h bar closes
+[2025-04-11 00:11:27] After-hours slippage tolerance: 1.00%
+[2025-04-11 00:11:27] Press Ctrl+C to stop the bot
+[2025-04-11 00:11:27] Current Chinese economic quadrant: C
+[2025-04-11 00:11:27] Notes: Quadrant C (CMS Pctl 69.4%): Above average macro momentum.
+[2025-04-11 00:11:27] Allowed grades for quadrant C: C
+[2025-04-11 00:11:27] Fetching top 50 Chinese stocks for grade C...
+[2025-04-11 00:11:27] Added 50 new unique Chinese symbols from grade C.
+[2025-04-11 00:11:27] Selected 50 unique Chinese stocks based on quadrant 'C' and configured grades: C
+[2025-04-11 00:11:27] Currently held positions: CORT, GLD, IONQ, NCEW, NCI, NTCL, OCG, PAGS, PGNY, RKLB, SH, SKBL, STRL, UBXG, WMK
+[2025-04-11 00:11:27] Monitoring 59 unique symbols (Quadrant: 50, Held: 15)
+[2025-04-11 00:11:27] 2025-04-11 00:11:24.832422: Starting 50-period SMA (4h) strategy
+[2025-04-11 00:11:27] Using Chinese stocks selected based on economic quadrant analysis (50): YSG, WIMI, WNW, WOK, WXM, XNET, XPEV, YHNA, YIBO, YJ, TC, TCTM, TOP, TROO, UBXG, VSME, RLX, RTC, SIMO, SJ, SKBL, STAK, SWIN, PTHL, QMMM, RAYA, RETO, NA, NCEW, NCI, NIO, NIU, NIVF, NTCL, OCG, ORIS, PETZ, LOBO, LSE, MFI, MGIH, MLGO, IQ, IZM, JL, JWEL, JYD, JZ, KRKR, LBGJ
+[2025-04-11 00:11:27] Also monitoring currently held stocks (15): CORT, GLD, IONQ, NCEW, NCI, NTCL, OCG, PAGS, PGNY, RKLB, SH, SKBL, STRL, UBXG, WMK
+[2025-04-11 00:11:27] Total symbols to check: 59
+[2025-04-11 00:11:27] Equity allocation for new buys: 50.0% of portfolio
+[2025-04-11 00:11:27] 2025-04-11 00:11:24.832471: Checking NCI...
+[2025-04-11 00:11:27] NCI current position: 2106 shares
+[2025-04-11 00:11:27] NCI current price: $0.52
+[2025-04-11 00:11:27] NCI 50-period SMA (4h): $0.43
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for NCI - executing trading logic
+[2025-04-11 00:11:27] NCI already in long position - holding
+[2025-04-11 00:11:27] Finished checking NCI
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:25.367915: Checking OCG...
+[2025-04-11 00:11:27] OCG current position: 315 shares
+[2025-04-11 00:11:27] OCG current price: $3.40
+[2025-04-11 00:11:27] OCG 50-period SMA (4h): $2.03
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 09:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for OCG - executing trading logic
+[2025-04-11 00:11:27] OCG already in long position - holding
+[2025-04-11 00:11:27] Finished checking OCG
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:25.519469: Checking QMMM...
+[2025-04-11 00:11:27] QMMM current position: 0 shares
+[2025-04-11 00:11:27] QMMM current price: $0.68
+[2025-04-11 00:11:27] QMMM 50-period SMA (4h): $1.14
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for QMMM - executing trading logic
+[2025-04-11 00:11:27] QMMM already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking QMMM
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:25.643449: Checking RTC...
+[2025-04-11 00:11:27] RTC current position: 0 shares
+[2025-04-11 00:11:27] RTC current price: $0.21
+[2025-04-11 00:11:27] RTC 50-period SMA (4h): $0.28
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for RTC - executing trading logic
+[2025-04-11 00:11:27] RTC already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking RTC
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:25.759505: Checking SIMO...
+[2025-04-11 00:11:27] SIMO current position: 0 shares
+[2025-04-11 00:11:27] SIMO current price: $39.66
+[2025-04-11 00:11:27] SIMO 50-period SMA (4h): $50.16
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for SIMO - executing trading logic
+[2025-04-11 00:11:27] SIMO already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking SIMO
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:25.870130: Checking JZ...
+[2025-04-11 00:11:27] JZ current position: 0 shares
+[2025-04-11 00:11:27] JZ current price: $0.71
+[2025-04-11 00:11:27] JZ 50-period SMA (4h): $0.90
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for JZ - executing trading logic
+[2025-04-11 00:11:27] JZ already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking JZ
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:25.997030: Checking YSG...
+[2025-04-11 00:11:27] YSG current position: 0 shares
+[2025-04-11 00:11:27] YSG current price: $3.58
+[2025-04-11 00:11:27] YSG 50-period SMA (4h): $4.76
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for YSG - executing trading logic
+[2025-04-11 00:11:27] YSG already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking YSG
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:26.118580: Checking RLX...
+[2025-04-11 00:11:27] RLX current position: 0 shares
+[2025-04-11 00:11:27] RLX current price: $1.74
+[2025-04-11 00:11:27] RLX 50-period SMA (4h): $2.01
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for RLX - executing trading logic
+[2025-04-11 00:11:27] RLX already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking RLX
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:26.236675: Checking MLGO...
+[2025-04-11 00:11:27] MLGO current position: 0 shares
+[2025-04-11 00:11:27] MLGO current price: $15.90
+[2025-04-11 00:11:27] MLGO 50-period SMA (4h): $11.37
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for MLGO - executing trading logic
+[2025-04-11 00:11:27] Calculated buy quantity for MLGO: Portfolio=$85735.11, EquityAlloc=50.00%, TradeSizePerc=2.50%, TargetTradeValue=$1071.69, Price=$15.90, Quantity=67
+[2025-04-11 00:11:27] MLGO price above SMA & approved for quadrant - Placing buy order for 67 shares
+[2025-04-11 00:11:27] After hours - Using limit order for BUY at price $16.06
+[2025-04-11 00:11:27] Error placing BUY order for 67 shares of MLGO: {"code":42210000,"message":"invalid limit_price 16.05910075187683. sub-penny increment does not fulfill minimum pricing criteria"}
+[2025-04-11 00:11:27] Finished checking MLGO
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:26.435401: Checking UBXG...
+[2025-04-11 00:11:27] UBXG current position: 259 shares
+[2025-04-11 00:11:27] UBXG current price: $4.14
+[2025-04-11 00:11:27] UBXG 50-period SMA (4h): $3.82
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 09:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for UBXG - executing trading logic
+[2025-04-11 00:11:27] UBXG already in long position - holding
+[2025-04-11 00:11:27] Finished checking UBXG
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:26.558334: Checking JYD...
+[2025-04-11 00:11:27] JYD current position: 0 shares
+[2025-04-11 00:11:27] JYD current price: $0.33
+[2025-04-11 00:11:27] JYD 50-period SMA (4h): $3.63
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for JYD - executing trading logic
+[2025-04-11 00:11:27] JYD already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking JYD
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:26.690640: Checking JL...
+[2025-04-11 00:11:27] JL current position: 0 shares
+[2025-04-11 00:11:27] JL current price: $3.10
+[2025-04-11 00:11:27] JL 50-period SMA (4h): $4.03
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for JL - executing trading logic
+[2025-04-11 00:11:27] JL already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking JL
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:26.808238: Checking TCTM...
+[2025-04-11 00:11:27] TCTM current position: 0 shares
+[2025-04-11 00:11:27] TCTM current price: $0.49
+[2025-04-11 00:11:27] TCTM 50-period SMA (4h): $0.38
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-04 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for TCTM - executing trading logic
+[2025-04-11 00:11:27] Calculated buy quantity for TCTM: Portfolio=$85735.11, EquityAlloc=50.00%, TradeSizePerc=2.50%, TargetTradeValue=$1071.69, Price=$0.49, Quantity=2165
+[2025-04-11 00:11:27] TCTM price above SMA & approved for quadrant - Placing buy order for 2165 shares
+[2025-04-11 00:11:27] After hours - Using limit order for BUY at price $0.50
+[2025-04-11 00:11:27] Error placing BUY order for 2165 shares of TCTM: {"code":42210000,"message":"asset \"TCTM\" not found"}
+[2025-04-11 00:11:27] Finished checking TCTM
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:26.994451: Checking NIO...
+[2025-04-11 00:11:27] NIO current position: 0 shares
+[2025-04-11 00:11:27] NIO current price: $3.28
+[2025-04-11 00:11:27] NIO 50-period SMA (4h): $4.23
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for NIO - executing trading logic
+[2025-04-11 00:11:27] NIO already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking NIO
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:27.107554: Checking SJ...
+[2025-04-11 00:11:27] SJ current position: 0 shares
+[2025-04-11 00:11:27] SJ current price: $0.81
+[2025-04-11 00:11:27] SJ 50-period SMA (4h): $0.91
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for SJ - executing trading logic
+[2025-04-11 00:11:27] SJ already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking SJ
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:27.227437: Checking NA...
+[2025-04-11 00:11:27] NA current position: 0 shares
+[2025-04-11 00:11:27] NA current price: $3.81
+[2025-04-11 00:11:27] NA 50-period SMA (4h): $4.90
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for NA - executing trading logic
+[2025-04-11 00:11:27] NA already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking NA
+[2025-04-11 00:11:27] ----------------------------------------
+[2025-04-11 00:11:27] 2025-04-11 00:11:27.343675: Checking SWIN...
+[2025-04-11 00:11:27] SWIN current position: 0 shares
+[2025-04-11 00:11:27] SWIN current price: $1.50
+[2025-04-11 00:11:27] SWIN 50-period SMA (4h): $1.62
+[2025-04-11 00:11:27] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:27] New 4h bar detected for SWIN - executing trading logic
+[2025-04-11 00:11:27] SWIN already out of position - holding cash
+[2025-04-11 00:11:27] Finished checking SWIN
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:27.473258: Checking WIMI...
+[2025-04-11 00:11:30] WIMI current position: 0 shares
+[2025-04-11 00:11:30] WIMI current price: $0.29
+[2025-04-11 00:11:30] WIMI 50-period SMA (4h): $0.67
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for WIMI - executing trading logic
+[2025-04-11 00:11:30] WIMI already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking WIMI
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:27.674166: Checking PTHL...
+[2025-04-11 00:11:30] PTHL current position: 0 shares
+[2025-04-11 00:11:30] PTHL current price: $3.20
+[2025-04-11 00:11:30] PTHL 50-period SMA (4h): $3.61
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for PTHL - executing trading logic
+[2025-04-11 00:11:30] PTHL already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking PTHL
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:27.795733: Checking RAYA...
+[2025-04-11 00:11:30] RAYA current position: 0 shares
+[2025-04-11 00:11:30] RAYA current price: $1.22
+[2025-04-11 00:11:30] RAYA 50-period SMA (4h): $1.25
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 09:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for RAYA - executing trading logic
+[2025-04-11 00:11:30] RAYA already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking RAYA
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:27.917560: Checking STRL...
+[2025-04-11 00:11:30] STRL current position: 3 shares
+[2025-04-11 00:11:30] STRL current price: $132.51
+[2025-04-11 00:11:30] STRL 50-period SMA (4h): $119.35
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for STRL - executing trading logic
+[2025-04-11 00:11:30] STRL already in long position - holding
+[2025-04-11 00:11:30] Finished checking STRL
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:28.050741: Checking PGNY...
+[2025-04-11 00:11:30] PGNY current position: 19 shares
+[2025-04-11 00:11:30] PGNY current price: $22.26
+[2025-04-11 00:11:30] PGNY 50-period SMA (4h): $21.54
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for PGNY - executing trading logic
+[2025-04-11 00:11:30] PGNY already in long position - holding
+[2025-04-11 00:11:30] Finished checking PGNY
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:28.192215: Checking NTCL...
+[2025-04-11 00:11:30] NTCL current position: 108 shares
+[2025-04-11 00:11:30] NTCL current price: $10.05
+[2025-04-11 00:11:30] NTCL 50-period SMA (4h): $9.20
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for NTCL - executing trading logic
+[2025-04-11 00:11:30] NTCL already in long position - holding
+[2025-04-11 00:11:30] Finished checking NTCL
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:28.309153: Checking NIU...
+[2025-04-11 00:11:30] NIU current position: 0 shares
+[2025-04-11 00:11:30] NIU current price: $2.90
+[2025-04-11 00:11:30] NIU 50-period SMA (4h): $3.49
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for NIU - executing trading logic
+[2025-04-11 00:11:30] NIU already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking NIU
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:28.425319: Checking WNW...
+[2025-04-11 00:11:30] WNW current position: 0 shares
+[2025-04-11 00:11:30] WNW current price: $1.43
+[2025-04-11 00:11:30] WNW 50-period SMA (4h): $2.45
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for WNW - executing trading logic
+[2025-04-11 00:11:30] WNW already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking WNW
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:28.563293: Checking IZM...
+[2025-04-11 00:11:30] IZM current position: 0 shares
+[2025-04-11 00:11:30] IZM current price: $1.71
+[2025-04-11 00:11:30] IZM 50-period SMA (4h): $1.73
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for IZM - executing trading logic
+[2025-04-11 00:11:30] IZM already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking IZM
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:28.682188: Checking STAK...
+[2025-04-11 00:11:30] STAK current position: 0 shares
+[2025-04-11 00:11:30] STAK current price: $1.15
+[2025-04-11 00:11:30] STAK 50-period SMA (4h): $3.36
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for STAK - executing trading logic
+[2025-04-11 00:11:30] STAK already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking STAK
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:28.798433: Checking LBGJ...
+[2025-04-11 00:11:30] LBGJ current position: 0 shares
+[2025-04-11 00:11:30] LBGJ current price: $1.24
+[2025-04-11 00:11:30] LBGJ 50-period SMA (4h): $1.35
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for LBGJ - executing trading logic
+[2025-04-11 00:11:30] LBGJ already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking LBGJ
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:28.915963: Checking KRKR...
+[2025-04-11 00:11:30] KRKR current position: 0 shares
+[2025-04-11 00:11:30] KRKR current price: $3.99
+[2025-04-11 00:11:30] KRKR 50-period SMA (4h): $4.11
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 09:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for KRKR - executing trading logic
+[2025-04-11 00:11:30] KRKR already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking KRKR
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:29.041306: Checking CORT...
+[2025-04-11 00:11:30] CORT current position: 12 shares
+[2025-04-11 00:11:30] CORT current price: $67.56
+[2025-04-11 00:11:30] CORT 50-period SMA (4h): $65.25
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for CORT - executing trading logic
+[2025-04-11 00:11:30] CORT already in long position - holding
+[2025-04-11 00:11:30] Finished checking CORT
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:29.160211: Checking PAGS...
+[2025-04-11 00:11:30] PAGS current position: 53 shares
+[2025-04-11 00:11:30] PAGS current price: $8.06
+[2025-04-11 00:11:30] PAGS 50-period SMA (4h): $7.93
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for PAGS - executing trading logic
+[2025-04-11 00:11:30] PAGS already in long position - holding
+[2025-04-11 00:11:30] Finished checking PAGS
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:29.283698: Checking NCEW...
+[2025-04-11 00:11:30] NCEW current position: 646 shares
+[2025-04-11 00:11:30] NCEW current price: $1.62
+[2025-04-11 00:11:30] NCEW 50-period SMA (4h): $1.56
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for NCEW - executing trading logic
+[2025-04-11 00:11:30] NCEW already in long position - holding
+[2025-04-11 00:11:30] Finished checking NCEW
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:29.413275: Checking TC...
+[2025-04-11 00:11:30] TC current position: 0 shares
+[2025-04-11 00:11:30] TC current price: $0.64
+[2025-04-11 00:11:30] TC 50-period SMA (4h): $0.74
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for TC - executing trading logic
+[2025-04-11 00:11:30] TC already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking TC
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:29.554000: Checking YHNA...
+[2025-04-11 00:11:30] YHNA current position: 0 shares
+[2025-04-11 00:11:30] YHNA current price: $10.21
+[2025-04-11 00:11:30] YHNA 50-period SMA (4h): $10.15
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-09 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for YHNA - executing trading logic
+[2025-04-11 00:11:30] Calculated buy quantity for YHNA: Portfolio=$85735.11, EquityAlloc=50.00%, TradeSizePerc=2.50%, TargetTradeValue=$1071.69, Price=$10.21, Quantity=104
+[2025-04-11 00:11:30] YHNA price above SMA & approved for quadrant - Placing buy order for 104 shares
+[2025-04-11 00:11:30] After hours - Using limit order for BUY at price $10.31
+[2025-04-11 00:11:30] Error placing BUY order for 104 shares of YHNA: {"code":42210000,"message":"invalid limit_price 10.312100038528442. sub-penny increment does not fulfill minimum pricing criteria"}
+[2025-04-11 00:11:30] Finished checking YHNA
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:29.752685: Checking VSME...
+[2025-04-11 00:11:30] VSME current position: 0 shares
+[2025-04-11 00:11:30] VSME current price: $0.77
+[2025-04-11 00:11:30] VSME 50-period SMA (4h): $0.93
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for VSME - executing trading logic
+[2025-04-11 00:11:30] VSME already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking VSME
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:29.893912: Checking WMK...
+[2025-04-11 00:11:30] WMK current position: 5 shares
+[2025-04-11 00:11:30] WMK current price: $81.35
+[2025-04-11 00:11:30] WMK 50-period SMA (4h): $78.37
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for WMK - executing trading logic
+[2025-04-11 00:11:30] WMK already in long position - holding
+[2025-04-11 00:11:30] Finished checking WMK
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:30.046048: Checking WXM...
+[2025-04-11 00:11:30] WXM current position: 0 shares
+[2025-04-11 00:11:30] WXM current price: $1.88
+[2025-04-11 00:11:30] WXM 50-period SMA (4h): $2.27
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for WXM - executing trading logic
+[2025-04-11 00:11:30] WXM already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking WXM
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:30.176192: Checking RKLB...
+[2025-04-11 00:11:30] RKLB current position: 22 shares
+[2025-04-11 00:11:30] RKLB current price: $19.64
+[2025-04-11 00:11:30] RKLB 50-period SMA (4h): $18.47
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for RKLB - executing trading logic
+[2025-04-11 00:11:30] RKLB already in long position - holding
+[2025-04-11 00:11:30] Finished checking RKLB
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:30.319853: Checking NIVF...
+[2025-04-11 00:11:30] NIVF current position: 0 shares
+[2025-04-11 00:11:30] NIVF current price: $0.44
+[2025-04-11 00:11:30] NIVF 50-period SMA (4h): $0.84
+[2025-04-11 00:11:30] Latest 4h bar close time: 2025-04-10 13:30:00-04:00
+[2025-04-11 00:11:30] New 4h bar detected for NIVF - executing trading logic
+[2025-04-11 00:11:30] NIVF already out of position - holding cash
+[2025-04-11 00:11:30] Finished checking NIVF
+[2025-04-11 00:11:30] ----------------------------------------
+[2025-04-11 00:11:30] 2025-04-11 00:11:30.444182: Checking PETZ...
+[2025-04-11 00:11:30] PETZ current position: 0 shares
+[2025-04-11 00:11:30] PETZ current price: $1.04
+[2025-04-11 00:11:30] PETZ 50-period SMA (4h): $1.22
