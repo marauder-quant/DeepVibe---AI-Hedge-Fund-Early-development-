@@ -21,6 +21,29 @@ The project is divided into three main components, located in separate directori
 * Alpaca Markets account (Paper or Live)
 * FRED API Key (for economic data in `market_analysis`)
 
+### Python Dependencies
+
+The project uses a comprehensive set of Python packages organized into categories:
+
+1. **Core Dependencies**: Essential packages for data handling and environment management
+2. **API Integrations**: Packages for interacting with financial and economic data APIs
+3. **Data Processing & Analysis**: Tools for data manipulation and visualization
+4. **Database**: Database connectivity and management
+5. **Development Tools**: Code formatting, linting, and testing utilities
+6. **Parallel Processing**: Tools for performance optimization
+7. **CLI & Logging**: Command-line interface and logging utilities
+
+All dependencies are specified in `requirements.txt` with exact version numbers to ensure reproducibility. The file is organized into sections with clear comments for easy maintenance.
+
+#### System Dependencies
+
+Some packages may require additional system libraries. On Ubuntu/Debian, install them with:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-dev build-essential libpq-dev
+```
+
 ### Step 1: Clone the Repository
 
 ```bash

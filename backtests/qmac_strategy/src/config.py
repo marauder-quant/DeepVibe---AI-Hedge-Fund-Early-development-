@@ -9,16 +9,16 @@ Configuration parameters for QMAC strategy.
 DEFAULT_SYMBOL = 'SPY'
 
 # Date range for backtesting
-DEFAULT_START_DATE = '2019-10-01'  # Format: YYYY-MM-DD
-DEFAULT_END_DATE = '2020-01-01'    # Format: YYYY-MM-DD
+DEFAULT_START_DATE = '2020-10-01'  # Format: YYYY-MM-DD
+DEFAULT_END_DATE = '2020-10-02'    # Format: YYYY-MM-DD
 
 # Timeframe settings
-DEFAULT_TIMEFRAME = '30m'  # Options: '1d', '1h', '30m', '15m', '5m', etc.
+DEFAULT_TIMEFRAME = '2m'  # Options: '1d', '1h', '30m', '15m', '5m', etc.
 
 # Window size range for optimization
 DEFAULT_MIN_WINDOW = 2
 DEFAULT_MAX_WINDOW = 252  # For daily timeframe, this is auto-adjusted to 252
-DEFAULT_WINDOW_STEP = 1   # Step size between window values (higher = faster but less granular)
+DEFAULT_WINDOW_STEP = 5   # Step size between window values (higher = faster but less granular)
 
 # Portfolio parameters
 INITIAL_CASH = 100.0  # Initial capital

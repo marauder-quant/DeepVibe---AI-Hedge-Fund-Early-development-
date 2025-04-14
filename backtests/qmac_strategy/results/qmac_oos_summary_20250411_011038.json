@@ -1,0 +1,9 @@
+{
+    "n_tests": 32,
+    "avg_return": 0.003924427206934495,
+    "avg_alpha": -0.05623553441000213,
+    "alpha_success_rate": 0.1875,
+    "avg_theta": 0.008835911986853335,
+    "theta_success_rate": 0.5,
+    "confidence": 0.29375
+}

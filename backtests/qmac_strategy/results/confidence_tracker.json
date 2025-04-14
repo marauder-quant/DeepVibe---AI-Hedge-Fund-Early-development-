@@ -254,8 +254,8 @@
             "confidence": 0.15000000000000002
         },
         {
-            "timestamp": "20250411_010812_test27",
-            "date": "2025-04-11 01:10:11",
+            "timestamp": "20250411_010812_test32",
+            "date": "2025-04-11 01:10:35",
             "params": {
                 "buy_fast": 15,
                 "buy_slow": 20,
@@ -264,23 +264,182 @@
             },
             "timeframe": "30m",
             "in_sample_return": 0,
-            "out_of_sample_return": -0.05358734101208397,
-            "return_delta": -0.05358734101208397,
-            "success_rate": 0.14814814814814814,
-            "n_tests": 27,
-            "avg_alpha": -0.06600690028974052,
-            "alpha_success_rate": 0.037037037037037035,
-            "avg_theta": -0.02051279962204502,
-            "theta_success_rate": 0.14814814814814814,
+            "out_of_sample_return": -0.051238405400174734,
+            "return_delta": -0.051238405400174734,
+            "success_rate": 0.15625,
+            "n_tests": 32,
+            "avg_alpha": -0.0635563442662076,
+            "alpha_success_rate": 0.0625,
+            "avg_theta": -0.018543780974821567,
+            "theta_success_rate": 0.15625,
             "confidence_metrics": {
-                "alpha_quality": 0.02222222222222222,
+                "alpha_quality": 0.0375,
                 "p_value": 1.0
             }
+        },
+        {
+            "timestamp": "20250411_010812",
+            "date": "2025-04-11 01:10:35",
+            "date_from": "2018-04-04",
+            "date_to": "2024-06-08",
+            "out_of_sample_return": -0.051238405400174734,
+            "avg_alpha": -0.0635563442662076,
+            "alpha_success_rate": 0.0625,
+            "avg_theta": -0.018543780974821567,
+            "theta_success_rate": 0.15625,
+            "confidence": 0.109375
+        },
+        {
+            "timestamp": "20250411_011038_test32",
+            "date": "2025-04-11 01:13:01",
+            "params": {
+                "buy_fast": 10,
+                "buy_slow": 45,
+                "sell_fast": 5,
+                "sell_slow": 50
+            },
+            "timeframe": "30m",
+            "in_sample_return": 0,
+            "out_of_sample_return": 0.003924427206934495,
+            "return_delta": 0.003924427206934495,
+            "success_rate": 0.25,
+            "n_tests": 32,
+            "avg_alpha": -0.05623553441000213,
+            "alpha_success_rate": 0.1875,
+            "avg_theta": 0.008835911986853335,
+            "theta_success_rate": 0.5,
+            "confidence_metrics": {
+                "alpha_quality": 0.11249999999999999,
+                "p_value": 0.8895598687806117
+            }
+        },
+        {
+            "timestamp": "20250411_011038",
+            "date": "2025-04-11 01:13:01",
+            "date_from": "2018-03-06",
+            "date_to": "2025-02-03",
+            "out_of_sample_return": 0.003924427206934495,
+            "avg_alpha": -0.05623553441000213,
+            "alpha_success_rate": 0.1875,
+            "avg_theta": 0.008835911986853335,
+            "theta_success_rate": 0.5,
+            "confidence": 0.29375
+        },
+        {
+            "timestamp": "20250411_011303_test32",
+            "date": "2025-04-11 01:15:16",
+            "params": {
+                "buy_fast": 15,
+                "buy_slow": 20,
+                "sell_fast": 5,
+                "sell_slow": 35
+            },
+            "timeframe": "30m",
+            "in_sample_return": 0,
+            "out_of_sample_return": -0.07857816865650105,
+            "return_delta": -0.07857816865650105,
+            "success_rate": 0.15625,
+            "n_tests": 32,
+            "avg_alpha": -0.1143551487780502,
+            "alpha_success_rate": 0.125,
+            "avg_theta": -0.016591416675312193,
+            "theta_success_rate": 0.3125,
+            "confidence_metrics": {
+                "alpha_quality": 0.075,
+                "p_value": 1.0
+            }
+        },
+        {
+            "timestamp": "20250411_011303",
+            "date": "2025-04-11 01:15:16",
+            "date_from": "2018-06-20",
+            "date_to": "2025-04-04",
+            "out_of_sample_return": -0.07857816865650105,
+            "avg_alpha": -0.1143551487780502,
+            "alpha_success_rate": 0.125,
+            "avg_theta": -0.016591416675312193,
+            "theta_success_rate": 0.3125,
+            "confidence": 0.1875
+        },
+        {
+            "timestamp": "20250411_011953_test6",
+            "date": "2025-04-11 01:20:23",
+            "params": {
+                "buy_fast": 15,
+                "buy_slow": 20,
+                "sell_fast": 5,
+                "sell_slow": 50
+            },
+            "timeframe": "30m",
+            "in_sample_return": 0,
+            "out_of_sample_return": 0.016229449635015002,
+            "return_delta": 0.016229449635015002,
+            "success_rate": 0.3333333333333333,
+            "n_tests": 6,
+            "avg_alpha": -0.06788825753481274,
+            "alpha_success_rate": 0.16666666666666666,
+            "avg_theta": 0.011969129471470752,
+            "theta_success_rate": 0.6666666666666666,
+            "confidence_metrics": {
+                "alpha_quality": 0.09999999999999999,
+                "p_value": 0.7222564395402148
+            }
+        },
+        {
+            "timestamp": "20250411_011953",
+            "date": "2025-04-11 01:20:23",
+            "date_from": "2019-05-01",
+            "date_to": "2020-12-12",
+            "in_sample_return": 0,
+            "out_of_sample_return": 0.016229449635015002,
+            "avg_alpha": -0.06788825753481274,
+            "alpha_success_rate": 0.16666666666666666,
+            "avg_theta": 0.011969129471470752,
+            "theta_success_rate": 0.6666666666666666,
+            "success_rate": 0.3333333333333333,
+            "confidence": 0.35
+        },
+        {
+            "timestamp": "20250411_012026_test6",
+            "date": "2025-04-11 01:20:43",
+            "params": {
+                "buy_fast": 10,
+                "buy_slow": 20,
+                "sell_fast": 5,
+                "sell_slow": 50
+            },
+            "timeframe": "30m",
+            "in_sample_return": 0,
+            "out_of_sample_return": -0.001197069330598139,
+            "return_delta": -0.001197069330598139,
+            "success_rate": 0.4,
+            "n_tests": 5,
+            "avg_alpha": -0.03330982408388555,
+            "alpha_success_rate": 0.2,
+            "avg_theta": -0.0025833456889181984,
+            "theta_success_rate": 0.2,
+            "confidence_metrics": {
+                "alpha_quality": 0.12,
+                "p_value": 1.0
+            }
+        },
+        {
+            "timestamp": "20250411_012026",
+            "date": "2025-04-11 01:20:43",
+            "date_from": "2018-03-01",
+            "date_to": "2024-12-04",
+            "in_sample_return": 0,
+            "out_of_sample_return": -0.001197069330598139,
+            "avg_alpha": -0.03330982408388555,
+            "alpha_success_rate": 0.2,
+            "avg_theta": -0.0025833456889181984,
+            "theta_success_rate": 0.2,
+            "success_rate": 0.4,
+            "confidence": 0.24000000000000002
         }
     ],
     "confidence_metrics": {
-        "alpha_quality_score": 0.1270228803445313,
-        "overall_confidence": 0.1270228803445313
+        "overall_confidence": 0.24000000000000002
     },
-    "last_updated": "2025-04-11 01:10:11"
+    "last_updated": "2025-04-11 01:20:43"
 }

@@ -27,5 +27,7 @@
 #26: fix qmac oos results
 #27: Error placing BUY order for 55 shares of ADPT: {"code":42210000,"message":"invalid limit_price 7.802249903678894. sub-penny increment does not fulfill minimum pricing criteria"}
 [2025-04-11 00:11:27] Finished checking ADPT
+#28: update readme for clear install guide on a cloud server
+#29: fix the requirements.txt (must include ALL packages to be installed, assuming were starting from a completely blank cloud server) and update readme again
 
     

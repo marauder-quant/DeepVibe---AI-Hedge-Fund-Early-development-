@@ -239,17 +239,22 @@ def update_confidence_tracker(params, summary, results_df, timestamp, timeframe)
     # Calculate confidence metric
     confidence = summary['alpha_success_rate'] * 0.5 + summary['theta_success_rate'] * 0.3 + (results_df['total_return'] > 0).mean() * 0.2
     
+    # Get in-sample performance data
+    in_sample_data = get_latest_in_sample_performance(timeframe)
+    
     # Create new test entry with only the requested fields
     test_entry = {
         'timestamp': timestamp,
         'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'date_from': results_df['start_date'].min().strftime('%Y-%m-%d') if 'start_date' in results_df.columns else None,
         'date_to': results_df['end_date'].max().strftime('%Y-%m-%d') if 'end_date' in results_df.columns else None,
+        'in_sample_return': in_sample_data.get('total_return', 0),
         'out_of_sample_return': summary['avg_return'],
         'avg_alpha': summary['avg_alpha'],
         'alpha_success_rate': summary['alpha_success_rate'],
         'avg_theta': summary['avg_theta'],
         'theta_success_rate': summary['theta_success_rate'],
+        'success_rate': (results_df['total_return'] > 0).mean(),
         'confidence': confidence
     }
     
@@ -376,7 +381,11 @@ def display_confidence_summary():
     if tracker['tests']:
         latest = tracker['tests'][-1]
         table.add_row("Latest Test Date", latest['date'])
-        table.add_row("In-sample Return", f"{latest['in_sample_return']:.2%}")
+        
+        # Check if in_sample_return exists before displaying it
+        if 'in_sample_return' in latest:
+            table.add_row("In-sample Return", f"{latest['in_sample_return']:.2%}")
+            
         table.add_row("Out-of-sample Return", f"{latest['out_of_sample_return']:.2%}")
         
         # Add alpha and theta info if available
@@ -388,7 +397,8 @@ def display_confidence_summary():
             table.add_row("Theta", f"{latest['avg_theta']:.2%}")
             table.add_row("Theta Success Rate", f"{latest['theta_success_rate']:.2%}")
         
-        table.add_row("Success Rate", f"{latest['success_rate']:.2%}")
+        if 'success_rate' in latest:
+            table.add_row("Success Rate", f"{latest['success_rate']:.2%}")
     
     table.add_row("Total Tests Run", str(len(tracker['tests'])))
     table.add_row("Last Updated", tracker['last_updated'])
