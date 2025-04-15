@@ -9,6 +9,10 @@ This module contains numba-optimized functions for performance-critical operatio
 import numpy as np
 import numba as nb
 from tqdm.auto import tqdm
+import psutil
+import os
+import time
+import gc
 
 @nb.njit
 def calculate_cross_signals(fast_ma, slow_ma):
@@ -74,11 +78,11 @@ def evaluate_window_combination(prices, buy_fast, buy_slow, sell_fast, sell_slow
     if n <= window_size:
         return 0.0
     
-    # Pre-allocate arrays
-    buy_fast_ma = np.zeros(n)
-    buy_slow_ma = np.zeros(n)
-    sell_fast_ma = np.zeros(n)
-    sell_slow_ma = np.zeros(n)
+    # Pre-allocate arrays - use float32 to reduce memory usage
+    buy_fast_ma = np.zeros(n, dtype=np.float32)
+    buy_slow_ma = np.zeros(n, dtype=np.float32)
+    sell_fast_ma = np.zeros(n, dtype=np.float32)
+    sell_slow_ma = np.zeros(n, dtype=np.float32)
     
     # Pre-compute sums for moving averages to avoid repeated calculations
     # Buy fast MA
@@ -126,7 +130,10 @@ def evaluate_window_combination(prices, buy_fast, buy_slow, sell_fast, sell_slow
     position = 0  # 0: out of market, 1: in the market
     entry_price = 0.0
     total_return = 0.0
+    trades = 0
+    losing_trades = 0
     
+    # Enhanced early stopping with multiple criteria
     for i in range(window_size+1, n):
         # Buy signal: fast crosses above slow
         if position == 0 and buy_fast_ma[i-2] <= buy_slow_ma[i-2] and buy_fast_ma[i-1] > buy_slow_ma[i-1]:
@@ -140,10 +147,22 @@ def evaluate_window_combination(prices, buy_fast, buy_slow, sell_fast, sell_slow
             # Calculate return (accounting for fees/slippage)
             trade_return = (exit_price / entry_price) * (1.0 - 0.005) - 1.0  # 0.5% for fees+slippage
             total_return += trade_return
+            trades += 1
             
-        # Early stopping for clearly unpromising combinations
+            # Track losing trades
+            if trade_return < 0:
+                losing_trades += 1
+        
+        # Enhanced early stopping for clearly unpromising combinations
+        # Multiple criteria for stopping the evaluation early:
+        # 1. If already seeing significant losses (-10%)
+        # 2. If we've had several trades and most were losing
+        # 3. If we've had multiple trades with no significant overall gains
         if position == 1 and total_return < -0.10:  # -10% threshold
-            # If already seeing significant losses, don't waste time on this combination
+            return total_return
+        elif trades >= 5 and losing_trades / trades > 0.8:  # Over 80% losing trades
+            return total_return * 0.9  # Apply penalty to discourage this combination
+        elif trades >= 10 and total_return < 0.01:  # Many trades but minimal returns
             return total_return
     
     # If still in position at the end, close position
@@ -152,6 +171,67 @@ def evaluate_window_combination(prices, buy_fast, buy_slow, sell_fast, sell_slow
         total_return += final_return
     
     return total_return
+
+def get_system_resources():
+    """
+    Get current system resource usage information.
+    
+    Returns:
+        dict: Dictionary containing system resource information
+    """
+    # Get CPU usage
+    cpu_percent = psutil.cpu_percent(interval=0.1)
+    
+    # Get memory information
+    memory = psutil.virtual_memory()
+    memory_used_percent = memory.percent
+    memory_available_gb = memory.available / (1024**3)
+    
+    # Get disk information
+    disk = psutil.disk_usage('/')
+    disk_used_percent = disk.percent
+    
+    # Get process information
+    process = psutil.Process(os.getpid())
+    process_memory_gb = process.memory_info().rss / (1024**3)
+    
+    return {
+        'cpu_percent': cpu_percent,
+        'memory_used_percent': memory_used_percent,
+        'memory_available_gb': memory_available_gb,
+        'disk_used_percent': disk_used_percent,
+        'process_memory_gb': process_memory_gb,
+        'timestamp': time.time()
+    }
+
+def adaptive_batch_size(current_batch_size, resources, min_batch_size=50, max_batch_size=10000):
+    """
+    Dynamically adjust batch size based on system resource usage.
+    
+    Args:
+        current_batch_size (int): Current batch size
+        resources (dict): System resource information from get_system_resources()
+        min_batch_size (int): Minimum batch size
+        max_batch_size (int): Maximum batch size
+        
+    Returns:
+        int: New batch size
+    """
+    # If memory is getting tight, reduce batch size
+    if resources['memory_used_percent'] > 85:
+        # Significant memory pressure, reduce batch size substantially
+        new_batch_size = max(min_batch_size, int(current_batch_size * 0.5))
+    elif resources['memory_used_percent'] > 75:
+        # Moderate memory pressure, reduce batch size slightly
+        new_batch_size = max(min_batch_size, int(current_batch_size * 0.8))
+    elif resources['memory_used_percent'] < 50 and resources['cpu_percent'] < 70:
+        # Plenty of resources available, increase batch size
+        new_batch_size = min(max_batch_size, int(current_batch_size * 1.2))
+    else:
+        # Resources are in an acceptable range, maintain current batch size
+        new_batch_size = current_batch_size
+    
+    return new_batch_size
 
 def calculate_total_possible_combinations(min_window, max_window, window_step):
     """
@@ -401,4 +481,200 @@ def sample_unique_windows(min_window, max_window, window_step, count=100, total_
     print(f"\nTotal combinations found: {len(valid_combinations):,}")
     print(f"Window sampling completed in {end_time - start_time:.2f} seconds")
     
-    return valid_combinations 
+    return valid_combinations
+
+def should_throttle_processing(resources, history=None, critical_memory_threshold=90, high_memory_threshold=80, critical_cpu_threshold=95):
+    """
+    Determine if processing should be throttled or paused based on system resources.
+    
+    Args:
+        resources (dict): Current system resource information from get_system_resources()
+        history (list, optional): History of resource measurements for trend analysis
+        critical_memory_threshold (int): Memory percentage above which to pause processing
+        high_memory_threshold (int): Memory percentage above which to throttle processing
+        critical_cpu_threshold (int): CPU percentage above which to throttle processing
+        
+    Returns:
+        tuple: (throttle_level, should_pause, reason)
+            throttle_level: 0 (none), 1 (light), 2 (medium), 3 (heavy)
+            should_pause: Boolean indicating if processing should pause completely
+            reason: String explaining the reason for throttling/pausing
+    """
+    throttle_level = 0
+    should_pause = False
+    reason = "Normal operation"
+    
+    # Check for critical memory pressure (most important resource to monitor)
+    if resources['memory_used_percent'] >= critical_memory_threshold:
+        should_pause = True
+        reason = f"Critical memory pressure: {resources['memory_used_percent']}% used"
+        return (3, should_pause, reason)
+    
+    # Check for high memory pressure
+    if resources['memory_used_percent'] >= high_memory_threshold:
+        throttle_level = max(throttle_level, 2)
+        reason = f"High memory pressure: {resources['memory_used_percent']}% used"
+    
+    # Check for critical CPU pressure
+    if resources['cpu_percent'] >= critical_cpu_threshold:
+        throttle_level = max(throttle_level, 2)
+        if "memory" not in reason:
+            reason = f"High CPU pressure: {resources['cpu_percent']}% used"
+    
+    # Check if available memory is critically low in absolute terms
+    if resources['memory_available_gb'] < 1.0:  # Less than 1 GB free
+        throttle_level = max(throttle_level, 3)
+        should_pause = True
+        reason = f"Critically low memory: only {resources['memory_available_gb']:.2f} GB available"
+    
+    # Process growth trends if history is provided
+    if history and len(history) >= 3:
+        # Check if memory usage is rapidly increasing
+        recent_memory = [h['memory_used_percent'] for h in history[-3:]]
+        memory_growth_rate = (recent_memory[-1] - recent_memory[0]) / 2  # % change per interval
+        
+        if memory_growth_rate > 5:  # More than 5% increase per interval
+            throttle_level = max(throttle_level, 2)
+            if "memory" not in reason:
+                reason = f"Rapidly increasing memory usage: {memory_growth_rate:.1f}% per interval"
+            
+            # If already high memory and growing fast, should pause
+            if resources['memory_used_percent'] > 70 and memory_growth_rate > 10:
+                should_pause = True
+                reason = f"High memory ({resources['memory_used_percent']}%) growing rapidly ({memory_growth_rate:.1f}% per interval)"
+    
+    # If process is using excessive memory, throttle
+    if resources['process_memory_gb'] > 0.5 * resources['memory_available_gb']:
+        throttle_level = max(throttle_level, 1)
+        if throttle_level == 1:  # Only set reason if not already set to something more severe
+            reason = f"Process using significant memory: {resources['process_memory_gb']:.2f} GB"
+    
+    return (throttle_level, should_pause, reason)
+
+def calculate_adaptive_concurrency(current_concurrency, resources, history=None, min_concurrency=1, max_concurrency=None):
+    """
+    Calculate adaptive concurrency level based on system resources.
+    
+    Args:
+        current_concurrency (int): Current concurrency level
+        resources (dict): Current system resource information
+        history (list, optional): History of resource measurements for trend analysis
+        min_concurrency (int): Minimum concurrency level
+        max_concurrency (int, optional): Maximum concurrency level (defaults to CPU count)
+        
+    Returns:
+        int: New concurrency level
+    """
+    if max_concurrency is None:
+        max_concurrency = os.cpu_count()
+    
+    # Get throttling recommendation
+    throttle_level, should_pause, reason = should_throttle_processing(resources, history)
+    
+    # If we should pause, return minimum concurrency
+    if should_pause:
+        return min_concurrency
+    
+    # Adjust concurrency based on throttle level
+    if throttle_level == 3:  # Heavy throttling
+        new_concurrency = max(min_concurrency, int(current_concurrency * 0.5))
+    elif throttle_level == 2:  # Medium throttling
+        new_concurrency = max(min_concurrency, int(current_concurrency * 0.7))
+    elif throttle_level == 1:  # Light throttling
+        new_concurrency = max(min_concurrency, current_concurrency - 1)
+    else:  # No throttling needed
+        # If resources are plentiful, cautiously increase concurrency
+        if resources['memory_used_percent'] < 50 and resources['cpu_percent'] < 70:
+            new_concurrency = min(max_concurrency, current_concurrency + 1)
+        else:
+            new_concurrency = current_concurrency
+    
+    return new_concurrency
+
+def handle_resource_pressure(resources, resource_history=None, recovery_time=15):
+    """
+    Handle system resource pressure with graceful degradation.
+    
+    Args:
+        resources (dict): Current system resource information
+        resource_history (list, optional): History of resource measurements
+        recovery_time (int): Base recovery time in seconds
+        
+    Returns:
+        tuple: (pause_duration, action_taken)
+    """
+    pause_duration = 0
+    action_taken = "none"
+    
+    # Check if we're in a critical state
+    throttle_level, should_pause, reason = should_throttle_processing(
+        resources, resource_history)
+    
+    if should_pause:
+        # Critical resource pressure - take immediate action
+        print(f"\n⚠️ CRITICAL RESOURCE PRESSURE: {reason}")
+        
+        # Calculate appropriate pause duration based on severity
+        if "memory" in reason and resources['memory_used_percent'] > 95:
+            # Severe memory pressure needs more recovery time
+            pause_duration = recovery_time * 2
+            action_taken = "long_pause"
+            
+            print(f"Pausing for {pause_duration}s to allow memory recovery")
+            
+            # Force garbage collection before pausing
+            gc.collect()
+            time.sleep(pause_duration)
+            
+            # Check if memory improved
+            new_resources = get_system_resources()
+            if new_resources['memory_used_percent'] > 90:
+                # Still critical - more aggressive action needed
+                print("Memory still critical after pause - forcing additional garbage collection")
+                
+                # Try to free more memory
+                import sys
+                try:
+                    # Clear any large variables in global namespace
+                    for var_name in list(globals().keys()):
+                        if var_name.startswith('__'):
+                            continue
+                        obj = globals()[var_name]
+                        if isinstance(obj, (list, dict, set)) and sys.getsizeof(obj) > 1024*1024:
+                            globals()[var_name] = None
+                except Exception as e:
+                    print(f"Error while trying to free globals: {e}")
+                
+                # Multiple GC runs and longer pause
+                for _ in range(3):
+                    gc.collect()
+                    time.sleep(2)
+                
+                action_taken = "emergency_recovery"
+                pause_duration += 6  # Additional 6 seconds
+        else:
+            # Standard pause for other resource issues
+            pause_duration = recovery_time
+            action_taken = "standard_pause"
+            
+            print(f"Pausing for {pause_duration}s to allow resource recovery")
+            gc.collect()
+            time.sleep(pause_duration)
+    
+    elif throttle_level >= 2:
+        # High resource pressure - take preventive action
+        print(f"\n⚠️ HIGH RESOURCE PRESSURE: {reason}")
+        pause_duration = recovery_time // 2
+        action_taken = "short_pause"
+        
+        print(f"Brief {pause_duration}s pause for resource stabilization")
+        gc.collect()
+        time.sleep(pause_duration)
+    
+    elif throttle_level == 1:
+        # Moderate resource pressure - light intervention
+        print(f"\nResource pressure: {reason}")
+        gc.collect()  # Just garbage collect without pausing
+        action_taken = "gc_only"
+    
+    return (pause_duration, action_taken) 

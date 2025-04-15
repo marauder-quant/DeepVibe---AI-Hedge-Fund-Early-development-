@@ -229,19 +229,20 @@ def run_out_of_sample_test_parallel(params, start_date=None, end_date=None, n_pe
     # Convert results to DataFrame
     results_df = pd.DataFrame(results)
     
-    # Filter results_df to only include the requested columns
-    if 'start_date' in results_df.columns and 'end_date' in results_df.columns:
-        results_df = results_df[['symbol', 'start_date', 'end_date', 'total_return', 'alpha', 'theta']]
-    
     # Calculate summary statistics
     summary = {
         'n_tests': len(results),
         'avg_return': results_df['total_return'].mean(),
+        'median_return': results_df['total_return'].median(),
+        'std_return': results_df['total_return'].std(),
+        'avg_sharpe': results_df['sharpe_ratio'].mean(),
+        'avg_max_drawdown': results_df['max_drawdown'].mean(),
+        'avg_trades': results_df['n_trades'].mean(),
+        'success_rate': (results_df['total_return'] > 0).mean(),
         'avg_alpha': results_df['alpha'].mean(),
         'alpha_success_rate': (results_df['alpha'] > 0).mean(),
         'avg_theta': results_df['theta'].mean(),
-        'theta_success_rate': (results_df['theta'] > 0).mean(),
-        'confidence': (results_df['alpha'] > 0).mean() * 0.5 + (results_df['theta'] > 0).mean() * 0.3 + (results_df['total_return'] > 0).mean() * 0.2
+        'theta_success_rate': (results_df['theta'] > 0).mean()
     }
     
     # Save results
@@ -259,7 +260,8 @@ def run_out_of_sample_test_parallel(params, start_date=None, end_date=None, n_pe
     
     for key, value in summary.items():
         if isinstance(value, float):
-            if key in ['avg_return', 'avg_alpha', 'alpha_success_rate', 'avg_theta', 'theta_success_rate', 'confidence']:
+            if key in ['avg_return', 'median_return', 'avg_max_drawdown', 'success_rate', 
+                        'avg_buy_and_hold', 'avg_alpha', 'alpha_success_rate', 'avg_theta', 'theta_success_rate']:
                 summary_table.add_row(key, f"{value:.2%}")
             else:
                 summary_table.add_row(key, f"{value:.2f}")
@@ -536,19 +538,20 @@ def run_out_of_sample_test(params, start_date=None, end_date=None, n_periods=1,
     # Convert results to DataFrame
     results_df = pd.DataFrame(results)
     
-    # Filter results_df to only include the requested columns
-    if 'start_date' in results_df.columns and 'end_date' in results_df.columns:
-        results_df = results_df[['symbol', 'start_date', 'end_date', 'total_return', 'alpha', 'theta']]
-    
     # Calculate summary statistics
     summary = {
         'n_tests': len(results),
         'avg_return': results_df['total_return'].mean(),
+        'median_return': results_df['total_return'].median(),
+        'std_return': results_df['total_return'].std(),
+        'avg_sharpe': results_df['sharpe_ratio'].mean(),
+        'avg_max_drawdown': results_df['max_drawdown'].mean(),
+        'avg_trades': results_df['n_trades'].mean(),
+        'success_rate': (results_df['total_return'] > 0).mean(),
         'avg_alpha': results_df['alpha'].mean(),
         'alpha_success_rate': (results_df['alpha'] > 0).mean(),
         'avg_theta': results_df['theta'].mean(),
-        'theta_success_rate': (results_df['theta'] > 0).mean(),
-        'confidence': (results_df['alpha'] > 0).mean() * 0.5 + (results_df['theta'] > 0).mean() * 0.3 + (results_df['total_return'] > 0).mean() * 0.2
+        'theta_success_rate': (results_df['theta'] > 0).mean()
     }
     
     # Save results
@@ -566,7 +569,8 @@ def run_out_of_sample_test(params, start_date=None, end_date=None, n_periods=1,
     
     for key, value in summary.items():
         if isinstance(value, float):
-            if key in ['avg_return', 'avg_alpha', 'alpha_success_rate', 'avg_theta', 'theta_success_rate', 'confidence']:
+            if key in ['avg_return', 'median_return', 'avg_max_drawdown', 'success_rate', 
+                        'avg_buy_and_hold', 'avg_alpha', 'alpha_success_rate', 'avg_theta', 'theta_success_rate']:
                 summary_table.add_row(key, f"{value:.2%}")
             else:
                 summary_table.add_row(key, f"{value:.2f}")
@@ -730,29 +734,44 @@ def update_confidence_tracker(params, summary, results_df, timestamp, timeframe)
     # Load existing tracker data
     tracker = load_confidence_tracker()
     
-    # Calculate confidence metric
-    confidence = summary['alpha_success_rate'] * 0.5 + summary['theta_success_rate'] * 0.3 + (results_df['total_return'] > 0).mean() * 0.2
+    # Get in-sample performance data
+    in_sample_data = get_latest_in_sample_performance(timeframe)
     
-    # Create new test entry with only the requested fields
+    # Calculate confidence metric - only using alpha_quality now
+    alpha_quality = calculate_alpha_quality(results_df)
+    overall_confidence = alpha_quality  # Directly use alpha_quality as the overall confidence
+    
+    # Create new test entry
     test_entry = {
         'timestamp': timestamp,
         'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'date_from': results_df['start_date'].min().strftime('%Y-%m-%d') if 'start_date' in results_df.columns else None,
-        'date_to': results_df['end_date'].max().strftime('%Y-%m-%d') if 'end_date' in results_df.columns else None,
+        'params': params,
+        'timeframe': timeframe,
+        'in_sample_return': in_sample_data.get('total_return', 0),
         'out_of_sample_return': summary['avg_return'],
+        'return_delta': summary['avg_return'] - in_sample_data.get('total_return', 0),
+        'success_rate': summary['success_rate'],
+        'n_tests': summary['n_tests'],
         'avg_alpha': summary['avg_alpha'],
         'alpha_success_rate': summary['alpha_success_rate'],
         'avg_theta': summary['avg_theta'],
         'theta_success_rate': summary['theta_success_rate'],
-        'confidence': confidence
+        'confidence_metrics': {
+            'alpha_quality': alpha_quality,
+            'p_value': calculate_statistical_confidence(results_df['total_return'])
+        }
     }
     
     # Add test to tracker
     tracker['tests'].append(test_entry)
     
-    # Update overall confidence metrics
+    # Calculate alpha quality score across all tests
+    alpha_quality_score = calculate_avg_alpha_quality(tracker['tests'])
+    
+    # Update overall confidence metrics - use alpha_quality_score as the overall confidence
     tracker['confidence_metrics'] = {
-        'overall_confidence': confidence
+        'alpha_quality_score': alpha_quality_score,
+        'overall_confidence': alpha_quality_score  # Use alpha_quality_score as overall_confidence
     }
     tracker['last_updated'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
@@ -762,9 +781,7 @@ def update_confidence_tracker(params, summary, results_df, timestamp, timeframe)
     # Generate confidence report
     generate_confidence_report(tracker, timestamp)
     
-    log.info(f"Confidence tracker updated. Overall confidence score: {confidence:.2%}")
-    
-    return confidence
+    log.info(f"Confidence tracker updated. Overall confidence score: {overall_confidence:.2%}")
 
 def get_latest_in_sample_performance(timeframe):
     """Get the latest in-sample performance metrics."""
@@ -858,7 +875,7 @@ def generate_confidence_report(tracker, timestamp):
     report_file = os.path.join('backtests/qmac_strategy/results', f'confidence_report_{timestamp}.png')
     
     # Set up the figure
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(12, 10))
     
     # Extract data from tracker
     tests = tracker['tests']
@@ -869,16 +886,13 @@ def generate_confidence_report(tracker, timestamp):
     # Convert to DataFrame for easier plotting
     df = pd.DataFrame([{
         'date': test['date'],
-        'start_date': test.get('date_from', test['date']),
-        'end_date': test.get('date_to', test['date']),
-        'avg_return': test['out_of_sample_return'],
-        'avg_alpha': test.get('avg_alpha', 0),
-        'alpha_success': test.get('alpha_success_rate', 0),
-        'avg_theta': test.get('avg_theta', 0),
-        'theta_success': test.get('theta_success_rate', 0),
-        'confidence': test.get('confidence_metrics', {}).get('alpha_quality', 0) * 0.5 + 
-                      test.get('theta_success_rate', 0) * 0.3 + 
-                      test.get('success_rate', 0) * 0.2
+        'in_sample_return': test['in_sample_return'],
+        'out_of_sample_return': test['out_of_sample_return'],
+        'alpha_quality': test['confidence_metrics'].get('alpha_quality', 0),
+        'p_value': test['confidence_metrics']['p_value'],
+        'success_rate': test['success_rate'],
+        'alpha': test.get('avg_alpha', 0),
+        'theta': test.get('avg_theta', 0)
     } for test in tests])
     df['date'] = pd.to_datetime(df['date'])
     
@@ -889,42 +903,70 @@ def generate_confidence_report(tracker, timestamp):
         # Fallback to default style if ggplot is not available
         plt.style.use('default')
     
-    # Plot 1: Average Return and Alpha
-    plt.subplot(2, 2, 1)
-    plt.plot(df['date'], df['avg_return'], 'g-', label='Avg Return')
-    plt.plot(df['date'], df['avg_alpha'], 'r-', label='Avg Alpha')
-    plt.title('Performance Metrics Over Time')
-    plt.ylabel('Value')
+    # Plot 1: Return comparison - Strategy and Alpha
+    plt.subplot(2, 3, 1)
+    plt.plot(df['date'], df['out_of_sample_return'], 'g-', label='Strategy')
+    plt.plot(df['date'], df['alpha'], 'r-', label='Alpha')
+    plt.title('Performance Over Time')
+    plt.ylabel('Return')
     plt.legend()
     plt.tight_layout()
     
-    # Plot 2: Alpha and Theta Success Rates
-    plt.subplot(2, 2, 2)
-    plt.plot(df['date'], df['alpha_success'], 'b-', label='Alpha Success')
-    plt.plot(df['date'], df['theta_success'], 'y-', label='Theta Success')
-    plt.title('Success Rates Over Time')
-    plt.ylabel('Rate (0-1)')
+    # Plot 2: Alpha Quality over time
+    plt.subplot(2, 3, 2)
+    plt.plot(df['date'], df['alpha_quality'], 'g-', label='Alpha Quality')
+    plt.title('Confidence Metric Over Time')
+    plt.ylabel('Score (0-1)')
     plt.legend()
     plt.tight_layout()
     
-    # Plot 3: Average Theta
-    plt.subplot(2, 2, 3)
-    plt.plot(df['date'], df['avg_theta'], 'm-', label='Avg Theta')
-    plt.title('Theta Performance Over Time')
-    plt.ylabel('Value')
+    # Plot 3: Success rates
+    plt.subplot(2, 3, 3)
+    width = 0.25
+    x = np.arange(3)
+    if 'theta_success_rate' in tests[-1] and 'alpha_success_rate' in tests[-1]:
+        plt.bar(x, [tests[-1]['success_rate'], tests[-1]['alpha_success_rate'], tests[-1]['theta_success_rate']], width)
+        plt.xticks(x, ['Return Success', 'Alpha Success', 'Theta Success'])
+    elif 'alpha_success_rate' in tests[-1]:
+        plt.bar(x[:2], [tests[-1]['success_rate'], tests[-1]['alpha_success_rate']], width)
+        plt.xticks(x[:2], ['Return Success', 'Alpha Success'])
+    else:
+        plt.bar(x[:1], [tests[-1]['success_rate']], width)
+        plt.xticks(x[:1], ['Return Success'])
+    
+    plt.title('Success Rates')
+    plt.ylim(0, 1)
+    plt.tight_layout()
+    
+    # Plot 4: In-sample vs Out-of-sample returns
+    plt.subplot(2, 3, 4)
+    plt.plot(df['date'], df['in_sample_return'], 'b-', label='In-sample')
+    plt.plot(df['date'], df['out_of_sample_return'], 'g-', label='Out-of-sample')
+    plt.title('Strategy vs In-Sample Performance')
+    plt.ylabel('Return')
     plt.legend()
     plt.tight_layout()
     
-    # Plot 4: Confidence
-    plt.subplot(2, 2, 4)
-    plt.plot(df['date'], df['confidence'], 'g-', label='Confidence')
-    plt.title('Strategy Confidence Over Time')
-    plt.ylabel('Confidence (0-1)')
-    plt.legend()
+    # Plot 5: Alpha distribution
+    plt.subplot(2, 3, 5)
+    plt.hist(df['alpha'], bins=min(10, len(df)))
+    plt.axvline(x=0, color='r', linestyle='--')
+    plt.title('Alpha Distribution')
+    plt.xlabel('Alpha')
+    plt.tight_layout()
+    
+    # Plot 6: Overall confidence gauge
+    plt.subplot(2, 3, 6)
+    overall_confidence = tracker['confidence_metrics'].get('overall_confidence', 0)
+    sns.barplot(x=['Overall Confidence'], y=[overall_confidence], palette=['green' if overall_confidence > 0.7 else 'orange' if overall_confidence > 0.4 else 'red'])
+    plt.title(f'Current Confidence Level: {overall_confidence:.2%}')
+    plt.ylim(0, 1)
+    for i, v in enumerate([overall_confidence]):
+        plt.text(i, v + 0.05, f'{v:.2%}', ha='center')
     plt.tight_layout()
     
     # Add overall title
-    plt.suptitle(f'QMAC Strategy Performance Summary - {datetime.now().strftime("%Y-%m-%d")}', fontsize=16)
+    plt.suptitle(f'QMAC Strategy Confidence Report - {datetime.now().strftime("%Y-%m-%d")}', fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
     
     # Save the figure

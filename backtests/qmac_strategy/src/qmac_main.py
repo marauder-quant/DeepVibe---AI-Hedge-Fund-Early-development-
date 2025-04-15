@@ -20,6 +20,7 @@ from config import *
 from lib.strategy_core import run_qmac_strategy
 from lib.optimizer import analyze_window_combinations
 from lib.visualization import plot_qmac_strategy, create_parameter_space_visualization, save_plots
+from lib.utils import get_system_resources
 
 def main():
     # Set up argument parser
@@ -57,6 +58,12 @@ def main():
                         help='Sell fast window size (only used with --no-opt)')
     parser.add_argument('--sell-slow', type=int, default=None,
                         help='Sell slow window size (only used with --no-opt)')
+    parser.add_argument('--max-memory-percent', type=int, default=80,
+                        help='Maximum percentage of system memory to use (default: 80)')
+    parser.add_argument('--batch-size', type=int, default=None,
+                        help='Override batch size for processing (default: auto)')
+    parser.add_argument('--adaptive-control', action='store_true', default=True,
+                        help='Enable adaptive resource controls (default: True)')
     
     args = parser.parse_args()
     
@@ -71,6 +78,29 @@ def main():
     max_combinations = args.max_combinations
     use_ray = args.use_ray
     num_cpus = args.num_cpus
+    
+    # Set environment variables for resource control
+    if args.batch_size:
+        os.environ["QMAC_BATCH_SIZE"] = str(args.batch_size)
+        print(f"Setting custom batch size: {args.batch_size}")
+    
+    # Set environment variable for memory limit
+    os.environ["QMAC_MAX_MEMORY_PERCENT"] = str(args.max_memory_percent)
+    print(f"Setting memory limit to {args.max_memory_percent}% of system memory")
+    
+    # Set environment variable for adaptive control
+    os.environ["QMAC_ADAPTIVE_CONTROL"] = "1" if args.adaptive_control else "0"
+    print(f"Adaptive resource control is {'enabled' if args.adaptive_control else 'disabled'}")
+    
+    # Display system resources
+    try:
+        resources = get_system_resources()
+        print("\nSystem Resources:")
+        print(f"CPU: {resources['cpu_percent']}% used")
+        print(f"Memory: {resources['memory_used_percent']}% used ({resources['memory_available_gb']:.2f} GB available)")
+        print(f"Process memory: {resources['process_memory_gb']:.2f} GB\n")
+    except Exception as e:
+        print(f"Unable to analyze system resources: {e}\n")
     
     # Fast mode - use limited window range for quick testing
     if args.fast:

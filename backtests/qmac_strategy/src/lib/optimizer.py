@@ -16,18 +16,27 @@ import ray
 import psutil
 import json
 import sys
+import gc
 from tqdm.auto import tqdm, trange
 
 # Add the parent directory to the path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import *
-from lib.utils import evaluate_window_combination, sample_unique_windows
+from lib.utils import (
+    evaluate_window_combination, 
+    sample_unique_windows, 
+    get_system_resources,
+    handle_resource_pressure,
+    adaptive_batch_size,
+    calculate_adaptive_concurrency,
+    should_throttle_processing
+)
 from lib.strategy_core import run_qmac_strategy
 from lib.database import save_top_parameters_to_db
 
 # Ray remote function for distributed combination evaluation
-@ray.remote(num_cpus=1)  # Explicitly specify resources
-def evaluate_window_combinations_batch(combinations, prices, max_window_size):
+@ray.remote(num_cpus=1)
+def evaluate_window_combinations_batch(combinations, prices, max_window_size, batch_memory_limit=None, early_exit_threshold=0.1):
     """
     Evaluate a batch of window combinations using Ray for distributed computing.
     
@@ -35,34 +44,101 @@ def evaluate_window_combinations_batch(combinations, prices, max_window_size):
         combinations (list): List of window combinations to evaluate
         prices (numpy.ndarray): Price array
         max_window_size (int): Maximum window size for pre-calculation
+        batch_memory_limit (float, optional): Memory limit in GB for this batch
+        early_exit_threshold (float): Performance threshold below which to stop testing
         
     Returns:
-        list: List of (combination, performance) tuples
+        list: List of (combination, performance) tuples and resource statistics
     """
     # Ensure price array is contiguous
     prices = np.ascontiguousarray(prices)
     
-    # Process combinations in mini-batches of 100 for better memory management
+    # Process combinations in mini-batches for better memory management
     results = []
     total = len(combinations)
     
-    # Process 100 combinations at a time to avoid memory pressure
-    for i in range(0, total, 100):
-        batch = combinations[i:i+100]
+    # Track memory usage
+    import psutil
+    import time
+    process = psutil.Process(os.getpid())
+    start_memory = process.memory_info().rss / (1024**3)  # GB
+    
+    # Collect resource stats for monitoring
+    start_time = time.time()
+    peak_memory = start_memory
+    resource_stats = {
+        "start_memory_gb": start_memory,
+        "peak_memory_gb": peak_memory,
+        "memory_growth_gb": 0,
+        "combinations_processed": 0,
+        "processing_time": 0,
+        "combinations_per_second": 0,
+    }
+    
+    # Track performance statistics
+    total_performance = 0.0
+    promising_combinations = 0
+    
+    # Adapt mini-batch size based on total combinations
+    mini_batch_size = min(100, max(10, total // 10))
+    
+    # Process combinations in mini-batches for better memory management
+    for i in range(0, total, mini_batch_size):
+        # Check memory usage and adjust if needed
+        current_memory = process.memory_info().rss / (1024**3)
+        peak_memory = max(peak_memory, current_memory)
+        memory_growth = current_memory - start_memory
+        
+        # If memory is growing too quickly, pause briefly
+        if batch_memory_limit and memory_growth > batch_memory_limit * 0.8:
+            # Force garbage collection
+            import gc
+            gc.collect()
+            time.sleep(0.1)  # Give system time to reclaim memory
+        
+        # If we're approaching memory limit, reduce batch size further
+        if batch_memory_limit and memory_growth > batch_memory_limit * 0.7:
+            mini_batch_size = max(5, mini_batch_size // 2)
+        
+        batch = combinations[i:i+mini_batch_size]
         batch_results = []
+        
+        # Early exit check - if we've processed enough combinations with poor results, stop
+        if i > total * 0.2 and promising_combinations == 0 and i >= 100:
+            # We've processed at least 20% of combinations with no promising results
+            break
         
         for buy_fast, buy_slow, sell_fast, sell_slow in batch:
             perf = evaluate_window_combination(prices, buy_fast, buy_slow, sell_fast, sell_slow, max_window_size)
             batch_results.append(((buy_fast, buy_slow, sell_fast, sell_slow), perf))
+            
+            # Track overall statistics
+            total_performance += perf
+            if perf > early_exit_threshold:
+                promising_combinations += 1
         
         results.extend(batch_results)
+        resource_stats["combinations_processed"] += len(batch)
         
-        # Explicitly trigger garbage collection to prevent memory leaks
-        if i % 1000 == 0 and i > 0:
+        # Explicitly trigger garbage collection periodically
+        if i % (mini_batch_size * 5) == 0 and i > 0:
             import gc
             gc.collect()
     
-    return results
+    # Calculate final resource statistics
+    end_time = time.time()
+    resource_stats["processing_time"] = end_time - start_time
+    resource_stats["peak_memory_gb"] = peak_memory
+    resource_stats["memory_growth_gb"] = peak_memory - start_memory
+    resource_stats["combinations_per_second"] = resource_stats["combinations_processed"] / max(0.1, resource_stats["processing_time"])
+    resource_stats["avg_performance"] = total_performance / max(1, resource_stats["combinations_processed"])
+    resource_stats["promising_ratio"] = promising_combinations / max(1, resource_stats["combinations_processed"])
+    
+    # Return both results and resource statistics
+    return {
+        "results": results,
+        "resource_stats": resource_stats
+    }
 
 def analyze_window_combinations_ray(symbol, start_date, end_date, 
                                    min_window=DEFAULT_MIN_WINDOW, max_window=DEFAULT_MAX_WINDOW, 
@@ -98,12 +174,39 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
     if num_cpus is None:
         num_cpus = os.cpu_count()
     
+    # Restrict CPUs based on system load if necessary
+    system_resources = get_system_resources()
+    if system_resources['cpu_percent'] > 85:
+        # System is under heavy load, reduce CPU usage
+        adjusted_cpus = max(1, int(num_cpus * 0.6))
+        print(f"System under heavy load ({system_resources['cpu_percent']}% CPU), reducing from {num_cpus} to {adjusted_cpus} CPUs")
+        num_cpus = adjusted_cpus
+    
     print(f"Running Ray-powered distributed optimization using {num_cpus} CPUs")
     
-    # Initialize Ray for distributed computing with proper memory limits
+    # Set memory limits based on system availability
+    available_memory_gb = system_resources['memory_available_gb']
+    max_memory_usage = min(available_memory_gb * 0.8, available_memory_gb - 2)  # Leave at least 2GB free
+    
+    # Calculate memory per CPU
+    memory_per_cpu_gb = max_memory_usage / num_cpus
+    
+    print(f"Available memory: {available_memory_gb:.2f} GB, allocating {max_memory_usage:.2f} GB total, {memory_per_cpu_gb:.2f} GB per CPU")
+    
+    # Initialize Ray for distributed computing with adaptive memory limits
     if not ray.is_initialized():
-        max_memory = int(0.7 * psutil.virtual_memory().total)  # Reduced to 70% of available memory
-        object_store_memory = int(0.5 * max_memory)  # 50% of max_memory for object store
+        # Calculate appropriate memory limits based on system resources
+        # Use 70% of available memory for Ray, with 50% of that for object store
+        max_memory = int(0.7 * psutil.virtual_memory().total)
+        object_store_memory = int(0.5 * max_memory)
+        
+        # Adjust memory limits if system is already under pressure
+        if system_resources['memory_used_percent'] > 70:
+            reduction_factor = 0.8  # Reduce memory usage under pressure
+            max_memory = int(max_memory * reduction_factor)
+            object_store_memory = int(object_store_memory * reduction_factor)
+            print(f"System memory usage high ({system_resources['memory_used_percent']}%), reducing memory allocation")
+        
         try:
             ray.init(num_cpus=num_cpus, _memory=max_memory, 
                     object_store_memory=object_store_memory, 
@@ -111,6 +214,11 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
         except:
             print("Warning: Failed to initialize Ray with memory parameters. Trying default init...")
             ray.init(num_cpus=num_cpus, ignore_reinit_error=True)
+    
+    # Set up resource monitoring
+    last_resource_check = time.time()
+    resource_check_interval = 30  # seconds
+    resource_history = []
     
     # Get data for testing
     single_result = run_qmac_strategy(
@@ -134,23 +242,34 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
     total_combinations = len(window_combinations)
     print(f"Testing {total_combinations:,} combinations with Ray distributed computing")
     
-    # Calculate optimal batch size based on total combinations and CPUs
-    # Aim for smaller but more numerous batches to improve parallelism
-    optimal_batches = num_cpus * 4  # 4 batches per CPU for better scheduling
+    # Calculate initial batch size based on total combinations and CPUs
+    # Start with a conservative batch size that we'll adjust dynamically
+    initial_batch_size = min(2000, max(100, total_combinations // (num_cpus * 2)))
     
     # Check for environment variable to override batch size
     env_batch_size = os.environ.get("QMAC_BATCH_SIZE")
     if env_batch_size and env_batch_size.isdigit():
-        batch_size = int(env_batch_size)
-        print(f"Using environment-specified batch size: {batch_size}")
+        initial_batch_size = int(env_batch_size)
+        print(f"Using environment-specified batch size: {initial_batch_size}")
+    
+    # Determine adaptive batch size based on combination count
+    if total_combinations > 1000000:
+        print("Very large combination count detected - using adaptive batch sizing")
+        # For extremely large runs, start with smaller batches and scale up
+        current_batch_size = min(initial_batch_size, 1000)
     else:
-        batch_size = max(100, total_combinations // optimal_batches)  # Ensure minimum batch size
+        current_batch_size = initial_batch_size
+    
+    print(f"Starting with batch size of {current_batch_size} combinations per task")
     
     # Split combinations into batches
-    batches = [window_combinations[i:i+batch_size] for i in range(0, total_combinations, batch_size)]
-    num_batches = len(batches)
+    batches = []
+    for i in range(0, total_combinations, current_batch_size):
+        end_idx = min(i + current_batch_size, total_combinations)
+        batches.append(window_combinations[i:end_idx])
     
-    print(f"Splitting work into {num_batches} batches of ~{batch_size} combinations each")
+    num_batches = len(batches)
+    print(f"Initial split: {num_batches} batches of ~{current_batch_size} combinations each")
     
     # Maximum window size for calculating MAs
     max_window_size = max_window  # Start with the max_window
@@ -168,35 +287,197 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
     # Process batches in smaller groups to avoid overwhelming the scheduler
     all_results = []
     
-    # Submit tasks in smaller groups
-    max_concurrent_batches = min(num_cpus * 2, 24)  # Limited concurrency - only process batches = 2x CPU count
+    # Track resource usage over time
+    resource_records = []
+    
+    # Adaptive concurrency control - start with conservative value and adjust
+    max_concurrent_batches = max(1, min(num_cpus, 8))  # Start with limited concurrency
+    print(f"Starting with concurrent batch limit of {max_concurrent_batches}")
+    
+    # Performance tracking
+    completed_combinations = 0
+    start_processing_time = time.time()
+    batch_completion_times = []
     
     with tqdm(total=num_batches, desc="Processing batch groups") as group_pbar:
         for batch_group_idx in range(0, num_batches, max_concurrent_batches):
+            # Check and adapt resources periodically
+            current_time = time.time()
+            if current_time - last_resource_check > resource_check_interval:
+                resources = get_system_resources()
+                resource_records.append(resources)
+                
+                # Log resource usage
+                print(f"\nResource check: CPU: {resources['cpu_percent']}%, Memory: {resources['memory_used_percent']}% ({resources['memory_available_gb']:.2f} GB free)")
+                
+                # Adjust max concurrency based on system load
+                if resources['memory_used_percent'] > 80 or resources['cpu_percent'] > 90:
+                    # System under pressure - reduce concurrency
+                    new_concurrency = max(1, int(max_concurrent_batches * 0.7))
+                    if new_concurrency < max_concurrent_batches:
+                        print(f"System under pressure - reducing concurrency from {max_concurrent_batches} to {new_concurrency}")
+                        max_concurrent_batches = new_concurrency
+                        
+                        # Force garbage collection
+                        gc.collect()
+                        
+                        # If memory pressure is severe, wait a bit to let the system recover
+                        if resources['memory_used_percent'] > 90:
+                            print(f"Memory pressure is severe ({resources['memory_used_percent']}%), pausing for 15 seconds to recover")
+                            time.sleep(15)
+                
+                elif resources['memory_used_percent'] < 50 and resources['cpu_percent'] < 70 and len(batch_completion_times) >= 3:
+                    # System has ample resources - we can increase concurrency
+                    new_concurrency = min(num_cpus, max_concurrent_batches + 1)
+                    if new_concurrency > max_concurrent_batches:
+                        print(f"System has ample resources - increasing concurrency from {max_concurrent_batches} to {new_concurrency}")
+                        max_concurrent_batches = new_concurrency
+                
+                # Adjust batch size based on completion times if we have data
+                if len(batch_completion_times) >= 3:
+                    avg_time = sum(batch_completion_times[-3:]) / 3
+                    if avg_time < 5 and current_batch_size < 5000:
+                        # Batches completing quickly - increase size for efficiency
+                        new_batch_size = min(10000, int(current_batch_size * 1.5))
+                        print(f"Batches completing quickly ({avg_time:.1f}s) - increasing size from {current_batch_size} to {new_batch_size}")
+                        current_batch_size = new_batch_size
+                    elif avg_time > 60 and current_batch_size > 200:
+                        # Batches taking too long - decrease size for responsiveness
+                        new_batch_size = max(100, int(current_batch_size * 0.7))
+                        print(f"Batches taking too long ({avg_time:.1f}s) - decreasing size from {current_batch_size} to {new_batch_size}")
+                        current_batch_size = new_batch_size
+                
+                # Update resource check timestamp
+                last_resource_check = current_time
+                
+                # Calculate and display performance metrics
+                if completed_combinations > 0:
+                    elapsed = current_time - start_processing_time
+                    combinations_per_second = completed_combinations / elapsed
+                    estimated_remaining = (total_combinations - completed_combinations) / combinations_per_second
+                    
+                    print(f"Performance: {combinations_per_second:.2f} combinations/sec, " +
+                          f"~{estimated_remaining/60:.1f} minutes remaining")
+            
+            # Submit only up to max_concurrent_batches at a time
             end_idx = min(batch_group_idx + max_concurrent_batches, num_batches)
             current_batches = batches[batch_group_idx:end_idx]
             
+            # Submit each batch with its own memory limit
+            batch_memory_limit = memory_per_cpu_gb * 0.8  # Use up to 80% of allocated memory per CPU
+            
             # Submit this group of batches
-            future_results = [evaluate_window_combinations_batch.remote(batch, ray_prices, max_window_size) 
-                            for batch in current_batches]
+            batch_start_time = time.time()
+            future_results = [evaluate_window_combinations_batch.remote(batch, ray_prices, max_window_size, batch_memory_limit) 
+                             for batch in current_batches]
             
             # Wait for all futures in this group to complete
             with tqdm(total=len(future_results), desc=f"Group {batch_group_idx//max_concurrent_batches + 1}") as batch_pbar:
                 while future_results:
-                    # Wait for the fastest batch to complete
-                    done_id, future_results = ray.wait(future_results, num_returns=1)
-                    
-                    # Get the result and add to all_results
-                    batch_results = ray.get(done_id[0])
-                    all_results.extend(batch_results)
-                    
-                    # Update progress bar
-                    batch_pbar.update(1)
+                    # Set a timeout to prevent getting stuck on a batch that's taking too long
+                    try:
+                        # Wait for the fastest batch to complete
+                        done_id, future_results = ray.wait(future_results, num_returns=1, timeout=300.0)
+                        
+                        if not done_id:  # Timeout occurred
+                            print("\nTimeout waiting for batch - checking system resources")
+                            resources = get_system_resources()
+                            print(f"System check: CPU: {resources['cpu_percent']}%, Memory: {resources['memory_used_percent']}%")
+                            
+                            if resources['memory_used_percent'] > 90:
+                                print("Critical memory pressure detected - pausing for recovery")
+                                time.sleep(20)  # Give system time to recover
+                                # Force garbage collection
+                                gc.collect()
+                                continue
+                        
+                        # Get the result and add to all_results
+                        batch_data = ray.get(done_id[0])
+                        
+                        # Extract results and resource stats
+                        batch_results = batch_data["results"]
+                        resource_stats = batch_data["resource_stats"]
+                        
+                        # Log resource statistics
+                        print(f"\nBatch completed: {resource_stats['combinations_processed']} combinations " + 
+                              f"in {resource_stats['processing_time']:.2f}s " + 
+                              f"({resource_stats['combinations_per_second']:.2f}/s)")
+                        print(f"Memory usage: {resource_stats['peak_memory_gb']:.2f}GB peak, " + 
+                              f"{resource_stats['memory_growth_gb']:.2f}GB growth")
+                        
+                        # Update resource records with this batch's data
+                        resource_records.append({
+                            "timestamp": time.time(),
+                            "worker_stats": resource_stats,
+                            "system_resources": get_system_resources()
+                        })
+                        
+                        # Check if we need to adjust batch size based on performance
+                        if resource_stats['peak_memory_gb'] > memory_per_cpu_gb * 0.8:
+                            # Memory usage is approaching limit, reduce batch size
+                            new_batch_size = max(50, int(current_batch_size * 0.7))
+                            print(f"High memory usage detected - reducing batch size from {current_batch_size} to {new_batch_size}")
+                            current_batch_size = new_batch_size
+                        
+                        # If worker performance is very poor, adjust concurrency
+                        if resource_stats['processing_time'] > 120 and max_concurrent_batches > 2:
+                            # Very slow processing, reduce concurrency
+                            max_concurrent_batches = max(1, max_concurrent_batches - 1)
+                            print(f"Slow batch processing detected - reducing concurrency to {max_concurrent_batches}")
+                        
+                        combinations_completed = len(batch_results)
+                        all_results.extend(batch_results)
+                        completed_combinations += combinations_completed
+                        
+                        # Update progress bar
+                        batch_pbar.update(1)
+                    except Exception as e:
+                        print(f"\nError processing batch: {str(e)}")
+                        # If we encounter an error, reduce concurrency to be safe
+                        max_concurrent_batches = max(1, max_concurrent_batches - 1)
+                        print(f"Reducing concurrency to {max_concurrent_batches} due to error")
+                        
+                        # Try to continue with remaining futures
+                        continue
+            
+            # Record batch group completion time for adaptive sizing
+            batch_completion_time = time.time() - batch_start_time
+            batch_completion_times.append(batch_completion_time)
             
             # Update group progress
             group_pbar.update(end_idx - batch_group_idx)
+            
+            # Recalculate batch splits if size changed significantly
+            if batch_group_idx + max_concurrent_batches < num_batches:
+                remaining_combinations = total_combinations - (batch_group_idx + max_concurrent_batches) * current_batch_size
+                if remaining_combinations > 0 and current_batch_size != initial_batch_size:
+                    print(f"\nResizing remaining {remaining_combinations} combinations with batch size {current_batch_size}")
+                    # Create new batches for remaining combinations with updated size
+                    new_batches = []
+                    
+                    for i in range(batch_group_idx + max_concurrent_batches, num_batches):
+                        start_idx = i * initial_batch_size
+                        for j in range(start_idx, min(start_idx + initial_batch_size, total_combinations), current_batch_size):
+                            end_j = min(j + current_batch_size, total_combinations)
+                            new_batches.append(window_combinations[j:end_j])
+                    
+                    # Replace remaining batches with new resized batches
+                    batches = batches[:batch_group_idx + max_concurrent_batches] + new_batches
+                    num_batches = len(batches)
+                    group_pbar.total = num_batches
+                    group_pbar.refresh()
+    
+    # Force final garbage collection
+    gc.collect()
     
     # Find the best combination
+    if not all_results:
+        print("Error: No results generated. Check system resources and retry with smaller batch sizes.")
+        return {
+            'ohlcv': single_result['ohlcv'],
+            'error': "No valid results produced"
+        }
+    
     best_result = max(all_results, key=lambda x: x[1])
     best_combination, best_perf = best_result
     
@@ -235,13 +516,15 @@ def analyze_window_combinations_ray(symbol, start_date, end_date,
     
     end_time = time.time()
     print(f"Ray-powered optimization completed in {end_time - start_time:.2f} seconds")
+    print(f"Processed {completed_combinations:,} combinations at {completed_combinations/(end_time-start_time):.2f} combinations/second")
     
     return {
         'ohlcv': single_result['ohlcv'],
         'performance_df': results_df,
         'optimal_windows': best_combination,
         'optimal_performance': best_perf,
-        'optimal_results': optimal_results
+        'optimal_results': optimal_results,
+        'resource_usage': resource_records
     }
 
 def analyze_window_combinations(symbol, start_date, end_date, 
