@@ -19,41 +19,19 @@ from dotenv import load_dotenv
 import argparse
 from dateutil.parser import parse
 
+# Import settings from config
+from backtests.dmac_strategy.config import (
+    DEFAULT_SYMBOL, DEFAULT_START_DATE, DEFAULT_END_DATE, DEFAULT_TIMEFRAME,
+    DEFAULT_MIN_WINDOW, DEFAULT_MAX_WINDOW, DEFAULT_WINDOW_STEP,
+    INITIAL_CASH, FEES, SLIPPAGE, 
+    METRICS_FREQUENCY, DEFAULT_PLOTS_DIR
+)
+
 # Load environment variables for Alpaca API keys
 load_dotenv()
 
-#############################################
-######## CONFIGURATION PARAMETERS ###########
-#############################################
-# Modify these variables to change default settings
-
-# Trading symbol
-DEFAULT_SYMBOL = 'SPY'
-
-# Date range for backtesting
-DEFAULT_START_DATE = '2019-10-01'  # Format: YYYY-MM-DD
-DEFAULT_END_DATE = '2020-01-01'    # Format: YYYY-MM-DD
-
-# Timeframe settings
-DEFAULT_TIMEFRAME = '1h'  # Options: '1d', '1h', '30m', '15m', '5m', etc.
-
-# Window size range for optimization
-DEFAULT_MIN_WINDOW = 2
-DEFAULT_MAX_WINDOW = 252  # For daily timeframe, this is auto-adjusted to 252
-DEFAULT_WINDOW_STEP = 1   # Step size between window values (higher = faster but less granular)
-
-# Portfolio parameters
-INITIAL_CASH = 100.0  # Initial capital
-FEES = 0.0025         # 0.25% per trade
-SLIPPAGE = 0.0025     # 0.25% slippage
-
-# Frequency for Sharpe ratio and other metrics 
-# 'd' for daily, 'h' for hourly, 'm' for minute, 'w' for weekly
-METRICS_FREQUENCY = 'h'  
-#############################################
-
 def run_dmac_strategy(symbol, start_date, end_date, fast_window, slow_window, 
-                      init_cash=INITIAL_CASH, fees=FEES, slippage=SLIPPAGE, timeframe='1d', verbose=True):
+                      init_cash=INITIAL_CASH, fees=FEES, slippage=SLIPPAGE, timeframe=DEFAULT_TIMEFRAME, verbose=True):
     """
     Run a Dual Moving Average Crossover strategy with specific window parameters.
     
@@ -77,8 +55,9 @@ def run_dmac_strategy(symbol, start_date, end_date, fast_window, slow_window,
     vbt.settings.portfolio['fees'] = fees
     vbt.settings.portfolio['slippage'] = slippage
     
-    # Add time buffer for SMA/EMA calculation
-    time_buffer = timedelta(days=500)
+    # Add time buffer for SMA/EMA calculation - at least 500 days to ensure enough data
+    # This is especially important for large MA windows
+    time_buffer = timedelta(days=max(500, slow_window * 3))
     
     # Download data with time buffer using Alpaca or fallback to Yahoo Finance if needed
     cols = ['Open', 'High', 'Low', 'Close', 'Volume']
@@ -86,6 +65,7 @@ def run_dmac_strategy(symbol, start_date, end_date, fast_window, slow_window,
     try:
         if verbose:
             print(f"Attempting to download data from Alpaca for {symbol}...")
+            print(f"Downloading with buffer of {time_buffer.days} days to ensure enough history for MA calculations")
         # Set Alpaca API credentials from environment variables
         from alpaca.data.historical import CryptoHistoricalDataClient, StockHistoricalDataClient
         from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
@@ -186,6 +166,15 @@ def run_dmac_strategy(symbol, start_date, end_date, fast_window, slow_window,
     wobuf_mask = (ohlcv_wbuf.index >= start_date) & (ohlcv_wbuf.index <= end_date)
     ohlcv = ohlcv_wbuf.loc[wobuf_mask, :]
     
+    if verbose:
+        print(f"Full data shape (with buffer): {ohlcv_wbuf.shape}")
+        print(f"Analysis window data shape: {ohlcv.shape}")
+    
+    # Check if there's enough data for the moving averages
+    if len(ohlcv_wbuf) < slow_window * 2:
+        print(f"WARNING: Not enough historical data for proper MA calculation. " +
+              f"Have {len(ohlcv_wbuf)} bars, but need at least {slow_window * 2} for reliable results.")
+    
     # Pre-calculate running windows on data with time buffer
     fast_ma = vbt.MA.run(ohlcv_wbuf['Close'], fast_window)
     slow_ma = vbt.MA.run(ohlcv_wbuf['Close'], slow_window)
@@ -213,6 +202,8 @@ def run_dmac_strategy(symbol, start_date, end_date, fast_window, slow_window,
     
     if verbose:
         print(f"Using metrics frequency: {freq}")
+        print(f"Entry signals count: {dmac_entries.sum()}")
+        print(f"Exit signals count: {dmac_exits.sum()}")
     
     # Build portfolio
     dmac_pf = vbt.Portfolio.from_signals(ohlcv['Close'], dmac_entries, dmac_exits, freq=freq)
@@ -383,7 +374,7 @@ def plot_heatmap(perf_matrix, metric='total_return'):
     
     return heatmap
 
-def save_plots(figures, symbol, start_date, end_date, output_dir='plots'):
+def save_plots(figures, symbol, start_date, end_date, output_dir=DEFAULT_PLOTS_DIR):
     """
     Save all plots to the specified directory.
     
@@ -393,25 +384,14 @@ def save_plots(figures, symbol, start_date, end_date, output_dir='plots'):
         start_date (datetime): Start date of backtest
         end_date (datetime): End date of backtest
         output_dir (str): Directory to save plots to
+    
+    Note: This is a legacy function. Use lib.visualization.save_plots instead.
     """
-    # Ensure output directory exists
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        
-    # Format dates for filenames
-    date_str = f"{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}"
+    # Import the visualization module's save_plots function
+    from backtests.dmac_strategy.lib.visualization import save_plots as viz_save_plots
     
-    # Create safe symbol name for filenames
-    symbol_safe = symbol.replace('/', '_')
-    
-    # Save each figure
-    for name, fig in figures.items():
-        filename = os.path.join(output_dir, f"{symbol_safe}_{name}_{date_str}.png")
-        try:
-            fig.write_image(filename)
-            print(f"Saved {name} plot to {filename}")
-        except Exception as e:
-            print(f"Error saving {name} plot: {str(e)}")
+    # Call the improved save_plots function
+    return viz_save_plots(figures, symbol, start_date, end_date, output_dir)
 
 if __name__ == "__main__":
     # Set up argument parser
@@ -498,21 +478,18 @@ if __name__ == "__main__":
     timeframe_str = timeframe.replace('m', 'min').replace('d', 'day').replace('h', 'hour')
     # Create more descriptive folder name
     plot_dir = f'plots/{timeframe_str}_{symbol}_backtest'
-    if not os.path.exists(plot_dir):
-        os.makedirs(plot_dir)
+    
+    # Generate heatmap and add to strategy_figures dictionary
+    heatmap = plot_heatmap(window_results['dmac_perf_matrix'], 'total_return')
+    strategy_figures['heatmap'] = heatmap
+    
+    # Save all plots including the heatmap
     save_plots(strategy_figures, symbol, start_date, end_date, output_dir=plot_dir)
     
-    # Generate and save heatmap
-    heatmap = plot_heatmap(window_results['dmac_perf_matrix'], 'total_return')
-    heatmap_filename = os.path.join(plot_dir, f"{symbol.replace('/', '_')}_heatmap_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.png")
-    try:
-        heatmap.write_image(heatmap_filename)
-        print(f"\nSaved visualization files in folder: {plot_dir}/")
-        print(f"1. Strategy plot: {symbol}_strategy_fig_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.png")
-        print(f"2. Performance comparison: {symbol}_value_fig_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.png")
-        print(f"3. Trades visualization: {symbol}_trades_fig_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.png")
-        print(f"4. Window optimization heatmap: {symbol}_heatmap_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.png")
-    except Exception as e:
-        print(f"Error saving heatmap: {str(e)}")
+    print(f"\nSaved visualization files in folder: {plot_dir}/")
+    print(f"1. Strategy plot: strategy_fig")
+    print(f"2. Performance comparison: value_fig")
+    print(f"3. Trades visualization: trades_fig")
+    print(f"4. Window optimization heatmap: heatmap")
     
     print("\nDone!") 

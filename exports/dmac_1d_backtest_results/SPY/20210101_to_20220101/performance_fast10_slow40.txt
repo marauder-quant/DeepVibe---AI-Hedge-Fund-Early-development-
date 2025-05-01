@@ -1,0 +1,72 @@
+DMAC Strategy Performance Report
+===============================
+
+Symbol: SPY
+Timeframe: 1d
+Date Range: 2021-01-01 to 2022-01-01
+Fast Window: 10
+Slow Window: 40
+
+DMAC Strategy Performance:
+Start                         2021-01-04 05:00:00+00:00
+End                           2021-12-31 05:00:00+00:00
+Period                                252 days 00:00:00
+Start Value                                       100.0
+End Value                                    114.802466
+Total Return [%]                              14.802466
+Benchmark Return [%]                          30.458066
+Max Gross Exposure [%]                            100.0
+Total Fees Paid                                1.361134
+Max Drawdown [%]                               5.608471
+Max Drawdown Duration                  80 days 00:00:00
+Total Trades                                          3
+Total Closed Trades                                   2
+Total Open Trades                                     1
+Open Trade PnL                                 2.641226
+Win Rate [%]                                      100.0
+Best Trade [%]                                10.214255
+Worst Trade [%]                                1.794546
+Avg Winning Trade [%]                            6.0044
+Avg Losing Trade [%]                                NaN
+Avg Winning Trade Duration             84 days 00:00:00
+Avg Losing Trade Duration                           NaT
+Profit Factor                                       inf
+Expectancy                                      6.08062
+Sharpe Ratio                                   1.725203
+Calmar Ratio                                   3.946406
+Omega Ratio                                    1.321919
+Sortino Ratio                                  2.593816
+dtype: object
+
+Hold Strategy Performance:
+Start                         2021-01-04 05:00:00+00:00
+End                           2021-12-31 05:00:00+00:00
+Period                                252 days 00:00:00
+Start Value                                       100.0
+End Value                                    129.159984
+Total Return [%]                              29.159984
+Benchmark Return [%]                          30.458066
+Max Gross Exposure [%]                            100.0
+Total Fees Paid                                0.573086
+Max Drawdown [%]                               5.111427
+Max Drawdown Duration                  32 days 00:00:00
+Total Trades                                          1
+Total Closed Trades                                   1
+Total Open Trades                                     0
+Open Trade PnL                                      0.0
+Win Rate [%]                                      100.0
+Best Trade [%]                                29.232884
+Worst Trade [%]                               29.232884
+Avg Winning Trade [%]                         29.232884
+Avg Losing Trade [%]                                NaN
+Avg Winning Trade Duration            251 days 00:00:00
+Avg Losing Trade Duration                           NaT
+Profit Factor                                       inf
+Expectancy                                    29.159984
+Sharpe Ratio                                   2.464697
+Calmar Ratio                                   8.777113
+Omega Ratio                                    1.403593
+Sortino Ratio                                  3.701937
+dtype: object
+
+Outperformance vs Hold: -14.36%

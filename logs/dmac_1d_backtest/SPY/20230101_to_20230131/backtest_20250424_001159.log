@@ -1,0 +1,2 @@
+2025-04-24 00:11:59,369 - root - INFO - Logging initialized for SPY backtest from 2023-01-01 00:00:00+00:00 to 2023-01-31 00:00:00+00:00
+2025-04-24 00:14:00,708 - root - INFO - Saved performance results to /workspaces/dmac_strategy_research_alpaca/exports/dmac_1d_backtest_results/SPY/20230101_to_20230131

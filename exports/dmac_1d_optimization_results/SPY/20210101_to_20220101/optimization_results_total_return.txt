@@ -1,0 +1,23 @@
+DMAC Optimization Results
+========================
+
+Symbol: SPY
+Timeframe: 1d
+Date Range: 2021-01-01 to 2022-01-01
+Optimization Metric: total_return
+
+Best Fast Window: 10
+Best Slow Window: 40
+Best total_return: 0.0000
+
+Top Window Combinations:
+1. Fast: 10, Slow: 40 - total_return: 0.1625
+2. Fast: 15, Slow: 30 - total_return: 0.1558
+3. Fast: 5, Slow: 45 - total_return: 0.1520
+4. Fast: 5, Slow: 40 - total_return: 0.1210
+5. Fast: 10, Slow: 25 - total_return: 0.1206
+6. Fast: 20, Slow: 25 - total_return: 0.1191
+7. Fast: 10, Slow: 20 - total_return: 0.1175
+8. Fast: 20, Slow: 35 - total_return: 0.1110
+9. Fast: 10, Slow: 35 - total_return: 0.1106
+10. Fast: 15, Slow: 25 - total_return: 0.1069
